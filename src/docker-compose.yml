@@ -1,0 +1,91 @@
+version: "3.7"
+services:
+  rp:
+    build:
+      context: .
+      dockerfile: ./RelyingParty/Dockerfile
+    ports:
+      - "8999:8999"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development # this enables fake login and disalbes redis (default is Production)
+      - ASPNETCORE_HTTP_PORTS=8999
+      - AUTHSERVER__ISSUER=http://rp:8999/meineapp
+      - AUTHSERVER__CLIENTS__0__CLIENTID=kctest
+      - AUTHSERVER__CLIENTS__0__REDIRECTURIS__0=http://localhost:8088/realms/testadapter/broker/oidc/endpoint
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__KID=nRrF8mo4_t110uWQ0GBH5xjhmRZFge5cCh1O5UmjrJk
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__KTY=RSA
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__ALG=RS256
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__USE=SIG
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__N=kvzdJbNoohm2HBgFplkzW1lSgsVYUP1ih-yc2JLQgv6sqku6MvEvUn48Pndd9pll10_bdLQKl_o6jI4o88-H_riVjyqfR_DTXwkgKlp-rM-t6i81QRXQKNMnZ_jXuKudWRsWC51f7zEkJ0UXS0CVNGfC7xAdKonbp8hKcixWqVqPnj7JsqnStNbbK_nmIrJGRsf-5e-QRql6YE20h_EWlaT3fP58UZCeVZbNPOtUbd6i0lzdjsXI1B5oVC8pKGe0hlIzliTGpotrcezWuQMDM03PVizDvHWYdNWO3fSJJbR0BBSTS0eKqt03Y-xIca5OXj7BKXLXcJQTHJ0a-CCa0w
+      - AUTHSERVER__CLIENTS__0__CLIENTASSERTIONSIGNKEYS__0__E=AQAB
+      - AUTHSERVER__CLIENTS__1__CLIENTID=kctest2
+      - AUTHSERVER__CLIENTS__1__CLIENTSECRET=secret
+      - AUTHSERVER__CLIENTS__1__REDIRECTURIS__0=http://localhost:8088/realms/testadapter/broker/oidc2/endpoint
+      - AUTHSERVER__CLIENTS__1__LOGINPAGEPATH=custom-theme/login.html
+      - REDISHOST=redis:6379
+      - OTELEXPORTEROTLPENDPOINT=http://otel-collector:4317
+      - GEMATIKXAUTHHEADER="askGeamtikForValue"
+    volumes:
+      - ./compose-config/custom-theme:/app/wwwroot/custom-theme
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    ports:
+      - "8088:8080"
+    command: 
+      - start-dev
+      - --import-realm
+#     - "--log-level=DEBUG"
+    volumes:
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json
+  # redis is not used if environment is development
+  redis:
+    image: redis:alpine3.18
+    
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: [ "--config=/etc/otel-collector.yaml" ]
+    volumes:
+      - ./compose-config/otel-collector.yaml:/etc/otel-collector.yaml
+    ports:
+      - "9999:9090"
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./compose-config/tempo.yaml:/etc/tempo.yaml
+    ports:
+      - "14268"  # jaeger ingest
+      - "3200"   # tempo
+      - "4317"  # otlp grpc
+      - "4318"  # otlp http
+      - "9411"   # zipkin
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./compose-config/prometheus.yaml:/etc/prometheus.yaml
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./compose-config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    ports:
+      - "3000:3000"
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml

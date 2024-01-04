@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <title>Login</title>
+    <link href="styles.css" rel="stylesheet"/>
+    <script src="script.js"></script>
+</head>
+<body>
+<header>
+    <img alt="Logo" class="navbar-logo" height="40" src="BAYOOMED.png">
+    <span>Gematik IdP Demo</span>
+</header>
+
+<section>
+    <h2>Krankenkasse wählen</h2>
+    <input id="searchbar" placeholder="Suche..." type="text"/>
+    <form action="../../auth/Login" method="post">
+        <input id="code" name="code" type="hidden" value=""/>
+    </form>
+</section>
+<footer>
+    BAYOOMED GmbH
+</footer>
+</body>
+</html>
