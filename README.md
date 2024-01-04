@@ -7,7 +7,7 @@ As a result, an id_token is returned with a claim containing KVNR.
 - Spin up the docker compose file in src directory
 - Add entry to your hosts file (/etc/hosts) for _rp_ pointing to _127.0.0.1_ (needed to make the redirects work)
 - Navigate to http://localhost:8088/realms/testadapter/account/#/ and click on "sign in"
-  -  "Gesundheits-ID Custom Theme" has a fake login button enabled that will issue a (fake) id_token to keyclaok
+  -  "Gesundheits-ID Custom Theme" has a fake login button enabled that will issue a (fake) id_token to keycloak
 
 # Notes
 - Only Code Flow is supported
