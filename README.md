@@ -1,5 +1,5 @@
 # Intro
-This is a simple OIDC adapter for the Gematik OIDC Federation Relaying Party (GesunfheitsID).
+This is a simple OIDC adapter for the Gematik OIDC Federation Relying Party (GesundheitsID).
 Clients use standard OIDC code flow and the adapter translates the request to OIDC federation.
 As a result, an id_token is returned with a claim containing KVNR.
 
