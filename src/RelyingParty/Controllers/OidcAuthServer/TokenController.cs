@@ -11,8 +11,10 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Com.Bayoomed.TelematikFederation.Controllers.OidcAuthServer;
 
-public class TokenController
-(IOptions<AuthServerOptions> options, ICacheService cache, ILogger<TokenController> logger,
+public class TokenController(
+    IOptions<AuthServerOptions> options,
+    ICacheService cache,
+    ILogger<TokenController> logger,
     ITokenRequestValidator requestValidator) : Controller
 {
     private readonly string _issuer = options.Value.Issuer;
@@ -47,11 +49,10 @@ public class TokenController
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, sub),
-            secIdToken.Claims.First(c => c.Type == "urn:telematik:claims:id"),
             new Claim(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(),
                 ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Nonce, authRequest.nonce)
-        };
+        }.Union(secIdToken.Claims.Where(c => c.Type == "urn:telematik:claims:id"));
         var token = new JwtSecurityToken(_issuer, authRequest.client_id, claims, DateTime.UtcNow,
             DateTime.UtcNow.AddMinutes(15), signingCredentials);
         var idToken = new JwtSecurityTokenHandler().WriteToken(token);

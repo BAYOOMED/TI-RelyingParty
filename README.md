@@ -43,7 +43,5 @@ The compose file starts the following services:
 - Requirement: A_23042 - Verifikation der Certificate Transparency für TLS Verbindungen in die VAU
   - This req is not implemented in code. Instead we use a curated list of ca-certificates when building the container. This is not part of this project.
 - Additional security aspects are covered by our infrstructure (using reverse proxy, TLS enforcement, WAF, etc.).
-- Requirement: A_23037 - Robustheit bei fehlenden Daten
-  - Not yet implemented. The service will error out if a user rejects to provide the KVNR
 - Only KVNR is rerquested for a user. Feel free to add code for additional scopes (using a pull request)
 - JWT decryption using ES256 is not possible out of the box using dotnet running on linux. Therefore jose-jwt is used. The needed code is not yet part of the main repo, so the following PR has been copied: https://github.com/dvsekhvalnov/jose-jwt/pull/232

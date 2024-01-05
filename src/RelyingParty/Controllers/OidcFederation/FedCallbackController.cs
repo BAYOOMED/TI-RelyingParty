@@ -83,7 +83,6 @@ public class FedCallbackController
             var idToken = validatedToken.Payload;
             if (idToken.Nonce == null || idToken.Nonce != par.Request.nonce)
                 throw new Exception("nonce mismatch");
-            if (idToken["urn:telematik:claims:id"] == null) throw new Exception("missing kvnr claim in id token");
             if (idToken.Acr != "gematik-ehealth-loa-high")
                 throw new Exception("acr value mismatch");
 
