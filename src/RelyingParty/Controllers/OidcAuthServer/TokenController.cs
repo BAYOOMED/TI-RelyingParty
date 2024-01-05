@@ -27,7 +27,7 @@ public class TokenController
     [HttpPost]
     public async Task<IActionResult> Post(TokenRequest tokenRequest)
     {
-        logger.LogInformation("token request: {@Request}", tokenRequest);
+        logger.LogDebug("token request: {@Request}", tokenRequest);
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(tokenRequest.code);
         var secIdToken = await cache.GetAndRemoveIdTokenFromSectorIdP(tokenRequest.code);
         if (secIdToken == null)
@@ -58,7 +58,7 @@ public class TokenController
         var accessToken = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
         //save it, so we can use it for userInfo endpoint
         await cache.AddIdToken(accessToken, token.Payload);
-        logger.LogInformation("id_token from auth: {@IdToken}", idToken);
+        logger.LogDebug("id_token from auth: {@IdToken}", idToken);
         return Json(new TokenResponse { id_token = idToken, access_token = accessToken, token_type = "Bearer" });
     }
 

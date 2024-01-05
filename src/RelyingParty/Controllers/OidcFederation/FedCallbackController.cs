@@ -96,7 +96,7 @@ public class FedCallbackController
             query["code"] = newCode;
             query["iss"] = _authIss;
             redirectUri.Query = query.ToString();
-            logger.LogInformation("token iss: {Token}", decryptedToken);
+            logger.LogDebug("token iss: {Token}", decryptedToken);
             return Redirect(redirectUri.Uri.ToString());
         }
         catch (Exception e)

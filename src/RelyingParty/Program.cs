@@ -8,8 +8,9 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 var commonOptions = builder.Configuration.Get<CommonOptions>()!;
-builder.Host.UseSerilog((_, _, conf) =>
+builder.Host.UseSerilog((ctx, _, conf) =>
 {
+    conf.ReadFrom.Configuration(ctx.Configuration);
     if (!string.IsNullOrEmpty(commonOptions.OtelExporterOtlpEndpoint))
         conf.AddOtel(builder.Environment.ApplicationName, Environment.MachineName, builder.Environment.EnvironmentName,
             commonOptions.OtelExporterOtlpEndpoint);
