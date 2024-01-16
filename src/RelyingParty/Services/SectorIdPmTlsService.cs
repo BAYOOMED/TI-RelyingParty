@@ -18,15 +18,17 @@ public class SectorIdPmTlsService(ISectorIdPEntityStatementService esService, IO
 {
     private readonly string _iss = options.Value.Issuer;
 
-    public async Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state)
+    public async Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state, string? scope)
     {
+        if(string.IsNullOrEmpty(scope))
+            scope = options.Value.Scope;
         var (challenge, verifier) = GenerateCodeChallenge();
         var authReq = new AuthorizationRequest
         {
             response_type = "code",
             client_id = _iss,
             redirect_uri = $"{_iss}/cb",
-            scope = "urn:telematik:versicherter openid",
+            scope = scope,
             state = state,
             nonce = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32)),
             code_challenge = challenge,

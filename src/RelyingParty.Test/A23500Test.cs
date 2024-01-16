@@ -50,7 +50,7 @@ public class A23500Test
                 }
             });
         var secTlsClient = new SectorIdPmTlsService(secEs.Object, options.Object, new HttpClient(handlerMock));
-        var resp = await secTlsClient.SendPushedAuthorizationRequest("https://sectoridp", "state");
+        var resp = await secTlsClient.SendPushedAuthorizationRequest("https://sectoridp", "state", null);
         var uri = new Uri(resp.RedirectUri);
         var query = HttpUtility.ParseQueryString(uri.Query);   
         Assert.IsTrue(uri.AbsoluteUri.StartsWith("https://secauth/auth"));

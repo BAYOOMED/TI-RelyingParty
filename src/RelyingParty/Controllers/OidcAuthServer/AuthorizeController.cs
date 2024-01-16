@@ -85,7 +85,8 @@ public class AuthorizeController(IOptions<AuthServerOptions> options, ICacheServ
             var secIdp = (await idpListService.GetIdpListAsync())?.FirstOrDefault(e => e.id == idpid);
             if (secIdp == null)
                 return BadRequest();
-            var parResponse = await parService.SendPushedAuthorizationRequest(secIdp.iss, newCode);
+            var scope = _clients.FirstOrDefault(c => c.ClientId == authRequest.client_id)?.SecIdpRequestedScope;
+            var parResponse = await parService.SendPushedAuthorizationRequest(secIdp.iss, newCode, scope);
             // we need this later to get the token
             await cache.AddParResponse(newCode, parResponse);
             return Redirect(parResponse.RedirectUri);

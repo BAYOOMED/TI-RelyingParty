@@ -71,7 +71,7 @@ public class A23004Test
         var handlerMock =
             new HttpMessageHandlerMock(new StringContent(JsonSerializer.Serialize(new AuthorizationResponse())));
         var secTlsClient = new SectorIdPmTlsService(secEs.Object, options.Object, new HttpClient(handlerMock));
-        _ = await secTlsClient.SendPushedAuthorizationRequest("https://sectoridp", "state");
+        _ = await secTlsClient.SendPushedAuthorizationRequest("https://sectoridp", "state", null);
         var req = handlerMock.Request.Content as FormUrlEncodedContent;
         var content = await req.ReadAsStringAsync();
         Assert.IsTrue(content.Contains("acr_values=gematik-ehealth-loa-high"));
