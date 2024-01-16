@@ -12,6 +12,7 @@ public class OidcFedOptions
     public string Issuer { get; set; }
     public string ClientName { get; set; }
     public string FederationMaster { get; set; }
+    public string Scope { get; set; }
     public string SignPrivKey { get; set; }
     public string EncPrivKey { get; set; }
     

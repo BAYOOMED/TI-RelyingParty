@@ -17,6 +17,7 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
     private readonly string _clientName = options.Value.ClientName;
     private readonly string _fedMaster = options.Value.FederationMaster;
     private readonly string _issuer = options.Value.Issuer;
+    private readonly string _scope = options.Value.Scope;
     private readonly string _signPrivKey = options.Value.SignPrivKey;
 
     /// <summary>
@@ -47,7 +48,7 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
             new Claim("authority_hints", JsonSerializer.Serialize(new[] { _fedMaster }),
                 JsonClaimValueTypes.JsonArray),
             new Claim("metadata", JsonSerializer.Serialize(
-                new EntityStatementJwtMetadata(_issuer, _clientName)
+                new EntityStatementJwtMetadata(_issuer, _clientName, _scope)
             ).RemoveEmptyArrayProperties(), JsonClaimValueTypes.Json)
         };
         var payload = new JwtPayload(_issuer, null, claims, null,

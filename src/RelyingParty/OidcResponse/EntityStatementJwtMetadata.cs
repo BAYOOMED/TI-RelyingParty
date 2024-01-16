@@ -1,18 +1,17 @@
 using System.Text.Json.Serialization;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Com.Bayoomed.TelematikFederation.OidcResponse;
 
-public class EntityStatementJwtMetadata(string issuer, string clientName)
+public class EntityStatementJwtMetadata(string issuer, string clientName, string scope)
 {
     [JsonPropertyName("openid_relying_party")]
-    public OpenIdRelyingParty OpenIdRelyingParty { get; } = new(issuer, clientName);
+    public OpenIdRelyingParty OpenIdRelyingParty { get; } = new(issuer, clientName, scope);
 
     [JsonPropertyName("federation_entity")]
     public FederationEntity FederationEntity { get; } = new(clientName);
 }
 
-public class OpenIdRelyingParty(string issuer, string clientName)
+public class OpenIdRelyingParty(string issuer, string clientName, string scope)
 {
     [JsonPropertyName("client_name")] public string ClientName => clientName;
 
@@ -45,7 +44,7 @@ public class OpenIdRelyingParty(string issuer, string clientName)
     [JsonPropertyName("id_token_encrypted_response_enc")]
     public string IdTokenEncryptedResponseEnc => "A256GCM";
 
-    [JsonPropertyName("scope")] public string Scope => "openid urn:telematik:versicherter";
+    [JsonPropertyName("scope")] public string Scope => scope;
 }
 
 public class FederationEntity(string clientName)
