@@ -52,7 +52,7 @@ public class TokenController(
             new Claim(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(),
                 ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Nonce, authRequest.nonce)
-        }.Union(secIdToken.Claims.Where(c => c.Type == "urn:telematik:claims:id"));
+        }.Union(secIdToken.Claims.Where(c => c.Type.StartsWith("urn:telematik:claims:") || c.Type == "birthdate"));
         var token = new JwtSecurityToken(_issuer, authRequest.client_id, claims, DateTime.UtcNow,
             DateTime.UtcNow.AddMinutes(15), signingCredentials);
         var idToken = new JwtSecurityTokenHandler().WriteToken(token);

@@ -24,7 +24,7 @@ public class A23037Test
     ///     Fachanwendung geeignet reagieren.
     /// </summary>
     [TestMethod]
-    public async Task A23037_MissingKvnrClaimFromSecIdp()
+    public async Task A23037_NoClaimFromSecIdp()
     {
         var options = new Mock<IOptions<AuthServerOptions>>();
         options.Setup(options => options.Value).Returns(new AuthServerOptions
@@ -50,7 +50,7 @@ public class A23037Test
                 nonce = "nonce",
                 code_challenge = Base64UrlEncoder.Encode(SHA256.HashData("code_verifier"u8.ToArray()))
             });
-        //no kvnr claim from secidp
+        //no additional claim from secidp
         cache.Setup(c => c.GetAndRemoveIdTokenFromSectorIdP(It.IsAny<string>())).ReturnsAsync(new JwtPayload(new Claim[]
         {
             new("iss", "fakeiss"),
@@ -86,7 +86,7 @@ public class A23037Test
     ///     Fachanwendung geeignet reagieren.
     /// </summary>
     [TestMethod]
-    public async Task A23037_ExistingKvnrClaimFromSecIdp()
+    public async Task A23037_ExistingClaimsFromSecIdp()
     {
         var options = new Mock<IOptions<AuthServerOptions>>();
         options.Setup(options => options.Value).Returns(new AuthServerOptions
@@ -117,7 +117,8 @@ public class A23037Test
         {
             new("iss", "fakeiss"),
             new("sub", "fakesub"),
-            new("urn:telematik:claims:id", "fakeKvnr")
+            new("urn:telematik:claims:id", "fakeKvnr"),
+            new("birthdate", "2011-12-24")
         }));
         var logger = new Mock<ILogger<TokenController>>();
         var tokenCnt = new TokenController(options.Object, cache.Object, logger.Object,
@@ -137,7 +138,10 @@ public class A23037Test
         var tokenResponse = (TokenResponse)jsonResult.Value;
         var idtoken = new JwtSecurityTokenHandler().ReadToken(tokenResponse.id_token) as JwtSecurityToken;
         var kvnrClaim = idtoken.Claims.FirstOrDefault(c=>c.Type == "urn:telematik:claims:id");
+        var birthdate = idtoken.Claims.FirstOrDefault(c=>c.Type == "birthdate");
         Assert.IsNotNull(kvnrClaim);
         Assert.AreEqual("fakeKvnr", kvnrClaim.Value);
+        Assert.IsNotNull(birthdate);
+        Assert.AreEqual("2011-12-24", birthdate.Value);
     }
 }
