@@ -1,7 +1,10 @@
 # Intro
 This is a simple OIDC adapter acting as Relying Party in the Gematik OIDC Federation (GesundheitsID) and providing standard OIDC for clients.
 Clients use standard OIDC code flow and the adapter translates the request to OIDC federation.
-As a result, an id_token is returned with a claim containing KVNR.
+As a result, an id_token is returned with all requested scopes/claims.
+
+If any questions arise, please don’t hesitate to contact BAYOOMED GmbH via info@bayoomed.com. As a full-service DiGA provider, we do not only provide the GesundheitsID implementation, but also ePA connections, penetration tests for your application and much more.
+
 
 # Quick Start
 - Spin up the docker compose file in src directory
@@ -12,11 +15,10 @@ As a result, an id_token is returned with a claim containing KVNR.
 # Notes
 - Only Code Flow is supported
 - Only confidential clients supported (if you have an app, you can use it anyway, but the client_secret wont be secure...)
-- Only scope "oidc" supported and must be present in request
+- Only scope "oidc" supported for client configuration and must be present in request. The actual scope used to request tokens from federation is configurable
 - Usage of PKCE/S256 is mandatory
 - No refresh token supported (for this usecase not needed)
 - UserInfo endpoint does not return any additional data. It is implemented because some clients need it to work.
-- Only KVNR is requested as scope at the moment. Our projects do not need user's email or any other additional data.
 - The returned sub claim is unique for a distinct user (calculated from iss and sub of sec IdP). See "A_23035 - pseudonymes Attribut "sub""
 
 See discovery document for more information on configuration options.
@@ -39,9 +41,13 @@ The compose file starts the following services:
 - Redis (required for environment==production)
 - Services to work with OpenTelemetry Tracing, Metrics and Logging
 
+# Configuration
+Configuration is done using dotnet appsettings.json files. Individual configuration values can be overwritten using environment variables.
+See https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-8.0#naming-of-environment-variables
+For an explanation of configurable settings see the *Options.cs classes in the root directory.
+
 # Limitations & TODOs
 - Requirement: A_23042 - Verifikation der Certificate Transparency für TLS Verbindungen in die VAU
   - This req is not implemented in code. Instead we use a curated list of ca-certificates when building the container. This is not part of this project.
 - Additional security aspects are covered by our infrstructure (using reverse proxy, TLS enforcement, WAF, etc.).
-- Only KVNR is rerquested for a user. Feel free to add code for additional scopes (using a pull request)
 - JWT decryption using ES256 is not possible out of the box using dotnet running on linux. Therefore jose-jwt is used. The needed code is not yet part of the main repo, so the following PR has been copied: https://github.com/dvsekhvalnov/jose-jwt/pull/232
