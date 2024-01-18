@@ -70,9 +70,10 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
         ecdsa.ImportFromPem(key.ExportSubjectPublicKeyInfoPem());
         var secKey = new ECDsaSecurityKey(ecdsa);
         secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
-        var jwks = new JsonWebKeySet();
         var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
         jwk.Use = "sig";
+        jwk.Alg = SecurityAlgorithms.EcdsaSha256;
+        var jwks = new JsonWebKeySet();
         jwks.Keys.Add(jwk);
         return jwks;
     }

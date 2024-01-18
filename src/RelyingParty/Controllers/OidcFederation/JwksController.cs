@@ -75,6 +75,7 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
 
         var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
         jwk.Use = use;
+        jwk.Alg = use == "sig" ? SecurityAlgorithms.EcdsaSha256 : SecurityAlgorithms.EcdhEs;
         return jwk;
     }
 
@@ -86,7 +87,7 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
         var jwk = JsonWebKeyConverter.ConvertFromX509SecurityKey(secKey);
         jwk.Use = use;
         var pubJwk = CreateJwk(cert.GetECDsaPublicKey() ?? throw new InvalidOperationException());
-        jwk.Alg = pubJwk.Alg;
+        jwk.Alg = use == "sig" ? SecurityAlgorithms.EcdsaSha256 : SecurityAlgorithms.EcdhEs;
         jwk.Crv = pubJwk.Crv;
         jwk.X = pubJwk.X;
         jwk.Y = pubJwk.Y;
