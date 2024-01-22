@@ -36,7 +36,7 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
         {
             CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false }
         };
-        var header = new JwtHeader(signingCredentials, null, "JWT");
+        var header = new JwtHeader(signingCredentials, null, "jwk-set+json");
         var ecEnc = ECDsa.Create();
         ecEnc.ImportFromPem(_encPrivKey);
 
