@@ -16,7 +16,7 @@ If any questions arise, please don’t hesitate to contact BAYOOMED GmbH via inf
 - Only Code Flow is supported
 - Only confidential clients supported (if you have an app, you can use it anyway, but the client_secret wont be secure...)
 - Only scope "oidc" supported for client configuration and must be present in request. The actual scope used to request tokens from federation is configurable
-- Usage of PKCE/S256 is mandatory
+- Usage of PKCE/S256 is mandatory unless PKCE is configured as optional in client configuration (see AuthServerOptions.cs)
 - No refresh token supported (for this usecase not needed)
 - UserInfo endpoint does not return any additional data. It is implemented because some clients need it to work.
 - The returned sub claim is unique for a distinct user (calculated from iss and sub of sec IdP). See "A_23035 - pseudonymes Attribut "sub""
