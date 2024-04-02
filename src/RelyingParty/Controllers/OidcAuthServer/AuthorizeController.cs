@@ -37,15 +37,21 @@ public class AuthorizeController(
             return AuthorizeError(OidcError.unsupported_response_type, authorizationRequest);
         if (authorizationRequest.scope != "openid")
             return AuthorizeError(OidcError.invalid_scope, authorizationRequest);
-        if (string.IsNullOrEmpty(authorizationRequest.code_challenge))
+        if (!string.IsNullOrEmpty(authorizationRequest.code_challenge_method) &&
+            string.IsNullOrEmpty(authorizationRequest.code_challenge))
             return AuthorizeError(OidcError.invalid_request, authorizationRequest, "code challenge missing");
-        if (client.AllowOptionalPkce && (!string.IsNullOrEmpty(authorizationRequest.code_challenge_method) ||
-            authorizationRequest.code_challenge_method != "S256"))
-            return AuthorizeError(OidcError.invalid_request, authorizationRequest,
-                "code challenge method not supported");
-        if (!client.AllowOptionalPkce && authorizationRequest.code_challenge_method != "S256")
-            return AuthorizeError(OidcError.invalid_request, authorizationRequest,
-                "code challenge method not supported");
+
+        switch (client.AllowOptionalPkce)
+        {
+            case true when !string.IsNullOrEmpty(authorizationRequest.code_challenge_method) &&
+                           authorizationRequest.code_challenge_method != "S256":
+                return AuthorizeError(OidcError.invalid_request, authorizationRequest,
+                    "code challenge method not supported");
+            case false when authorizationRequest.code_challenge_method != "S256":
+                return AuthorizeError(OidcError.invalid_request, authorizationRequest,
+                    "code challenge method not supported");
+        }
+
         //store the authorizationRequest (using a random key)
         var code = await cache.AddAuthorizationRequest(authorizationRequest);
 
