@@ -32,7 +32,7 @@ public class TokenController(
         logger.LogDebug("token request: {@Request}", tokenRequest);
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(tokenRequest.code);
         var secIdToken = await cache.GetAndRemoveIdTokenFromSectorIdP(tokenRequest.code);
-        if (secIdToken == null)
+        if (secIdToken == null || authRequest == null)
             return TokenError(OidcError.invalid_grant, tokenRequest, "cache miss - session expired");
         var (error, msg) = requestValidator.ValidateRequest(tokenRequest, authRequest);
         if (error != null)

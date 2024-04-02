@@ -60,4 +60,9 @@ public class OidcClient
     ///     Scopes to request from sector idp. Default is all defined scopes
     /// </summary>
     public string SecIdpRequestedScope { get; set; }
+    
+    /// <summary>
+    /// If true, usage of PKCE is optional
+    /// </summary>
+    public bool AllowOptionalPkce { get; set; }
 }

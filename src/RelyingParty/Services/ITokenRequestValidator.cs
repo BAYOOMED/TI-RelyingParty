@@ -14,5 +14,5 @@ public interface ITokenRequestValidator
     /// <param name="tokenRequest">the token request</param>
     /// <param name="authRequest">the initial authentication request</param>
     /// <returns>error and message in case the validation fails, null otherwise</returns>
-    (OidcError? error, string? message) ValidateRequest(TokenRequest tokenRequest, AuthorizationRequest? authRequest);
+    (OidcError? error, string? message) ValidateRequest(TokenRequest tokenRequest, AuthorizationRequest authRequest);
 }

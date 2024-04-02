@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Com.Bayoomed.TelematikFederation.OidcRequest;
 using Com.Bayoomed.TelematikFederation.OidcResponse;
 using Microsoft.Extensions.Options;
@@ -12,18 +11,22 @@ namespace Com.Bayoomed.TelematikFederation.Services;
 public class TokenRequestValidator(IOptions<AuthServerOptions> options) : ITokenRequestValidator
 {
     public (OidcError? error, string? message) ValidateRequest(TokenRequest tokenRequest,
-        AuthorizationRequest? authRequest)
+        AuthorizationRequest authRequest)
     {
-        if (authRequest == null)
-            return (OidcError.invalid_grant, "cache miss - session expired");
         if (tokenRequest.grant_type != "authorization_code")
             return (OidcError.unsupported_grant_type, null);
         if (tokenRequest.redirect_uri != authRequest.redirect_uri)
             return (OidcError.invalid_grant, "redirect_uri mismatch");
-        var calcChallenge =
-            Base64UrlEncoder.Encode(SHA256.Create().ComputeHash(Encoding.ASCII.GetBytes(tokenRequest.code_verifier)));
-        if (calcChallenge != authRequest.code_challenge)
-            return (OidcError.invalid_grant, "code_verifier mismatch");
+        if (!string.IsNullOrEmpty(authRequest.code_challenge_method))
+        {
+            if(tokenRequest.code_verifier == null)
+                return (OidcError.invalid_grant, "code_verifier missing");
+            var calcChallenge =
+                Base64UrlEncoder.Encode(
+                    SHA256.Create().ComputeHash(Encoding.ASCII.GetBytes(tokenRequest.code_verifier)));
+            if (calcChallenge != authRequest.code_challenge)
+                return (OidcError.invalid_grant, "code_verifier mismatch");
+        }
 
         string? clientId;
         if (tokenRequest.client_assertion_type == "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")

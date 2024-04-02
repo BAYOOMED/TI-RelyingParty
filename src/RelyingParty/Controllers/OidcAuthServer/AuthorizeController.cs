@@ -9,8 +9,11 @@ using Microsoft.Extensions.Options;
 
 namespace Com.Bayoomed.TelematikFederation.Controllers.OidcAuthServer;
 
-public class AuthorizeController(IOptions<AuthServerOptions> options, ICacheService cache,
-    ISectorIdPmTlsService parService, IFedMasterIdpListService idpListService,
+public class AuthorizeController(
+    IOptions<AuthServerOptions> options,
+    ICacheService cache,
+    ISectorIdPmTlsService parService,
+    IFedMasterIdpListService idpListService,
     ILogger<AuthorizeController> logger) : Controller
 {
     private readonly IList<OidcClient> _clients = options.Value.Clients;
@@ -36,7 +39,11 @@ public class AuthorizeController(IOptions<AuthServerOptions> options, ICacheServ
             return AuthorizeError(OidcError.invalid_scope, authorizationRequest);
         if (string.IsNullOrEmpty(authorizationRequest.code_challenge))
             return AuthorizeError(OidcError.invalid_request, authorizationRequest, "code challenge missing");
-        if (authorizationRequest.code_challenge_method != "S256")
+        if (client.AllowOptionalPkce && (!string.IsNullOrEmpty(authorizationRequest.code_challenge_method) ||
+            authorizationRequest.code_challenge_method != "S256"))
+            return AuthorizeError(OidcError.invalid_request, authorizationRequest,
+                "code challenge method not supported");
+        if (!client.AllowOptionalPkce && authorizationRequest.code_challenge_method != "S256")
             return AuthorizeError(OidcError.invalid_request, authorizationRequest,
                 "code challenge method not supported");
         //store the authorizationRequest (using a random key)
@@ -82,7 +89,7 @@ public class AuthorizeController(IOptions<AuthServerOptions> options, ICacheServ
         try
         {
             // actual flow starts here
-            var secIdp = (await idpListService.GetIdpListAsync())?.FirstOrDefault(e => e.id == idpid);
+            var secIdp = (await idpListService.GetIdpListAsync()).FirstOrDefault(e => e.id == idpid);
             if (secIdp == null)
                 return BadRequest();
             var scope = _clients.FirstOrDefault(c => c.ClientId == authRequest.client_id)?.SecIdpRequestedScope;
@@ -98,10 +105,9 @@ public class AuthorizeController(IOptions<AuthServerOptions> options, ICacheServ
     }
 
     /// <summary>
-    /// This is meant for testing only. No interaction with TI. Instantly returns a fake id_token
+    ///     This is meant for testing only. No interaction with TI. Instantly returns a fake id_token
     /// </summary>
     /// <param name="code"></param>
-    /// <param name="idpid"></param>
     /// <returns></returns>
     [HttpPost]
     public async Task<IActionResult> FakeLogin(string code)
