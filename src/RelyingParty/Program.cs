@@ -1,6 +1,5 @@
 using Com.Bayoomed.TelematikFederation;
 using Com.Bayoomed.TelematikFederation.Services;
-using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -63,6 +62,12 @@ builder.Services.AddHttpClient<ISectorIdPmTlsService, SectorIdPmTlsService>(_ =>
         return handler;
     });
 
+//add CORS policy for /idp endpoint (Access-Control-Allow-Origin: *)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("idplist",
+        policy => { policy.AllowAnyOrigin(); });
+});
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
@@ -74,7 +79,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = $"{new Uri(authOptions.Value.Issuer).LocalPath}/static",
     FileProvider = new SymLinkFileProvider(builder.Environment.WebRootPath)
 });
-
+app.UseCors();
 // manual routing because the routes depend on cofigured issuer
 // OIDC federation Endpoints
 var path = new Uri(fedOptions.Issuer).LocalPath.TrimStart('/');
@@ -96,7 +101,8 @@ app.MapControllerRoute("userinfo", $"{path}/auth/UserInfo", new { controller = "
 if (builder.Environment.IsDevelopment())
 {
     Log.Warning("Running in development mode. FakeLogin enabled!");
-    app.MapControllerRoute("fakelogin", $"{path}/auth/FakeLogin", new { controller = "Authorize", action = "FakeLogin" });
+    app.MapControllerRoute("fakelogin", $"{path}/auth/FakeLogin",
+        new { controller = "Authorize", action = "FakeLogin" });
 }
 
 app.Run();
