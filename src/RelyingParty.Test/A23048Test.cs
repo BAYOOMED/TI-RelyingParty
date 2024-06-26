@@ -62,7 +62,7 @@ public class A23048Test
             }
         });
         var cache = new Mock<ICacheService>();
-        cache.Setup(c => c.GetAndRemoveAuthorizationRequest("code")).ReturnsAsync(new AuthorizationRequest());
+        cache.Setup(c => c.GetAuthorizationRequestAndRemoveIfUsedTwice("code")).ReturnsAsync(new AuthorizationRequest());
         var logger = new Mock<ILogger<AuthorizeController>>();
         var idpListService = new Mock<IFedMasterIdpListService>();
         var idpEntry = new IdpEntry() { iss = "https://sectoridp" };
