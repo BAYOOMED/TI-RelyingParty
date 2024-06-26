@@ -10,15 +10,8 @@ var commonOptions = builder.Configuration.Get<CommonOptions>()!;
 builder.Host.UseSerilog((ctx, _, conf) =>
 {
     conf.ReadFrom.Configuration(ctx.Configuration);
-    if (!string.IsNullOrEmpty(commonOptions.OtelExporterOtlpEndpoint))
-        conf.AddOtel(builder.Environment.ApplicationName, Environment.MachineName, builder.Environment.EnvironmentName,
-            commonOptions.OtelExporterOtlpEndpoint);
     conf.WriteTo.Console();
 });
-
-if (!string.IsNullOrEmpty(commonOptions.OtelExporterOtlpEndpoint))
-    builder.Services.AddOtelTracingAndMetrics(builder.Environment.ApplicationName, Environment.MachineName,
-        builder.Environment.EnvironmentName, commonOptions.OtelExporterOtlpEndpoint);
 
 builder.Services.AddControllers();
 builder.Services.AddOptions<OidcFedOptions>().Bind(builder.Configuration.GetSection("OidcFederation"));

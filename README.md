@@ -51,3 +51,4 @@ For an explanation of configurable settings see the *Options.cs classes in the r
   - This req is not implemented in code. Instead we use a curated list of ca-certificates when building the container. This is not part of this project.
 - Additional security aspects are covered by our infrstructure (using reverse proxy, TLS enforcement, WAF, etc.).
 - JWT decryption using ES256 is not possible out of the box using dotnet running on linux. Therefore jose-jwt https://github.com/dvsekhvalnov/jose-jwt is used. 
+- OpenTelemetry instrumentation via code has been removed in favor of OTEL automatic instrumentation. See compose file and Dockerfile_OTel

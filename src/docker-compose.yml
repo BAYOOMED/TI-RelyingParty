@@ -3,7 +3,7 @@ services:
   rp:
     build:
       context: .
-      dockerfile: ./RelyingParty/Dockerfile
+      dockerfile: ./RelyingParty/Dockerfile_OTel
     ports:
       - "8999:8999"
     environment:
@@ -23,10 +23,14 @@ services:
       - AUTHSERVER__CLIENTS__1__REDIRECTURIS__0=http://localhost:8088/realms/testadapter/broker/oidc2/endpoint
       - AUTHSERVER__CLIENTS__1__LOGINPAGEPATH=custom-theme/login.html
       - REDISHOST=redis:6379
-      - OTELEXPORTEROTLPENDPOINT=http://otel-collector:4317
       - GEMATIKXAUTHHEADER="askGeamtikForValue"
+      - OTEL_SERVICE_NAME=rp
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      #- OTEL_DOTNET_AUTO_METRICS_CONSOLE_EXPORTER_ENABLED=true #metrics visibility in console
     volumes:
       - ./compose-config/custom-theme:/app/wwwroot/custom-theme
+    env_file:
+      - ./compose-config/otel-dotnet.env
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     environment:
@@ -51,7 +55,8 @@ services:
       - ./compose-config/otel-collector.yaml:/etc/otel-collector.yaml
     ports:
       - "9999:9090"
-
+      - "4317:4317"
+      - "4318:4318"
   tempo:
     image: grafana/tempo:latest
     command: [ "-config.file=/etc/tempo.yaml" ]
