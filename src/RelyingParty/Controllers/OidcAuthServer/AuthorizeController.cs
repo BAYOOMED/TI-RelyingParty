@@ -86,7 +86,7 @@ public class AuthorizeController(
     [HttpPost]
     public async Task<IActionResult> Login(string code, string idpid)
     {
-        var authRequest = await cache.GetAndRemoveAuthorizationRequest(code);
+        var authRequest = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
         if (authRequest == null)
             return AuthorizeError(OidcError.invalid_client, new AuthorizationRequest(), "cache miss - session expired");
 

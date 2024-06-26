@@ -74,6 +74,22 @@ public class CacheService(IDistributedCache cache) : ICacheService
         return cache.GetAndRemoveAsync<AuthorizationRequest>($"login_{code}");
     }
 
+    public async Task<AuthorizationRequest?> GetAuthorizationRequestAndRemoveIfUsedTwice(string code)
+    {
+        var counter = await cache.GetAsync($"counter_{code}");
+        if (counter == null)
+        {
+            await cache.SetAsync($"counter_{code}", [1], new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+            return await cache.GetAsync<AuthorizationRequest>($"login_{code}");
+        }
+
+        await cache.RemoveAsync($"counter_{code}");
+        return await cache.GetAndRemoveAsync<AuthorizationRequest>($"login_{code}");
+    }
+
     public Task AddIdToken(string accessToken, JwtPayload idToken)
     {
         return cache.SetAsync($"acc_{accessToken}", idToken, TimeSpan.FromMinutes(10));

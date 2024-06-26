@@ -22,6 +22,7 @@ public interface ICacheService
     Task<JsonWebKeySet?> GetSectorIdpJwks(string iss);
     Task<string> AddAuthorizationRequest(AuthorizationRequest request);
     Task<AuthorizationRequest?> GetAndRemoveAuthorizationRequest(string code);
+    Task<AuthorizationRequest?> GetAuthorizationRequestAndRemoveIfUsedTwice(string code);
     Task AddIdToken(string accessToken, JwtPayload idToken);
     Task<JwtPayload?> GetIdToken(string accessToken);
     Task AddParResponse(string state, ParResponse parResponse);

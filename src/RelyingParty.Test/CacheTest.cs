@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Com.Bayoomed.TelematikFederation.OidcRequest;
 using Com.Bayoomed.TelematikFederation.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
@@ -70,5 +71,23 @@ public class CacheServiceTest
         Assert.AreEqual(payload.Iss, loaded.Iss);
         Assert.AreEqual("withvalue", loaded["anything"]);
         Assert.IsTrue(loaded.ValidTo > DateTime.UtcNow.AddMinutes(9));
+    }
+
+    /// <summary>
+    /// GetAuthorizationRequestAndRemoveIfUsedTwice returns the object only twice an returns null on subsequent calls 
+    /// </summary>
+    [TestMethod]
+    public async Task GetAuthorizationRequestAndRemoveIfUsedTwiceReturnedOnlyTwice()
+    {
+        var opt = new Mock<IOptions<MemoryDistributedCacheOptions>>();
+        opt.Setup(o => o.Value).Returns(new MemoryDistributedCacheOptions());
+        var cache = new CacheService(new MemoryDistributedCache(opt.Object));
+        var code = await cache.AddAuthorizationRequest(new AuthorizationRequest());
+        var req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
+        Assert.IsNotNull(req);
+        req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
+        Assert.IsNotNull(req);
+        req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
+        Assert.IsNull(req);
     }
 }
