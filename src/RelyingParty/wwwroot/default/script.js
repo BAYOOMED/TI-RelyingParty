@@ -2,6 +2,7 @@ window.addEventListener('load', async (event) => {
     let data = await fetch('/idp');
     let idp = await data.json();
     let form = document.querySelector("form");
+    idp.sort((a, b) => a.organization_name.toLowerCase().localeCompare(b.organization_name.toLowerCase()));
     idp.forEach(ele => {
         let template = document.createElement("template");
         template.innerHTML = `
