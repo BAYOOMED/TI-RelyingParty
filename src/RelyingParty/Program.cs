@@ -105,7 +105,7 @@ internal class GematikXAuthHttpHandler(string headerValue) : HttpClientHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        if (request.RequestUri?.Host is "gsi.dev.gematik.solutions" or "gsi-ref.dev.gematik.solutions")
+        if (request.RequestUri != null && request.RequestUri.Host.EndsWith("gematik.solutions", StringComparison.OrdinalIgnoreCase))
             request.Headers.Add("X-Authorization", headerValue);
         return base.SendAsync(request, cancellationToken);
     }
