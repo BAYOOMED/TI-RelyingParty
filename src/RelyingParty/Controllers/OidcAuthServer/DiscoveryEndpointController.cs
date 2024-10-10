@@ -9,7 +9,7 @@ public class DiscoveryEndpointController(IOptions<AuthServerOptions> options) : 
     private readonly string _issuer = options.Value.Issuer;
 
     /// <summary>
-    /// returns the OIDC Discovery Document of the Auth Server
+    ///     returns the OIDC Discovery Document of the Auth Server
     /// </summary>
     /// <returns></returns>
     [HttpGet]
@@ -21,7 +21,8 @@ public class DiscoveryEndpointController(IOptions<AuthServerOptions> options) : 
             authorization_endpoint = $"{_issuer}/auth/Authorize",
             userinfo_endpoint = $"{_issuer}/auth/UserInfo",
             token_endpoint = $"{_issuer}/auth/Token",
-            token_endpoint_auth_methods_supported = new[] { "client_secret_post", "private_key_jwt" },
+            token_endpoint_auth_methods_supported =
+                new[] { "client_secret_post", "private_key_jwt", "client_secret_basic" },
             response_types_supported = new[] { "code" },
             subject_types_supported = new[] { "public", "pairwise" },
             id_token_signing_alg_values_supported = new[] { "ES256" },

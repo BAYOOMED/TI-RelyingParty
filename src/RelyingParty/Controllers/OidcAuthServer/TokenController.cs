@@ -25,11 +25,27 @@ public class TokenController(
     ///     The token endpoint of the auth server. Exchange the code for an id_token and access_token.
     /// </summary>
     /// <param name="tokenRequest"></param>
+    /// <param name="authorization"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<IActionResult> Post(TokenRequest tokenRequest)
+    public async Task<IActionResult> Post(TokenRequest tokenRequest,
+        [FromHeader(Name = "Authorization")] string authorization)
     {
         logger.LogDebug("token request: {@Request}", tokenRequest);
+        if (!string.IsNullOrEmpty(authorization))
+        {
+            logger.LogDebug("using basic auth header");
+            //parse basic auth header
+            var parts = authorization.Split(' ');
+            if (parts.Length != 2 || parts[0] != "Basic")
+                return TokenError(OidcError.invalid_request, tokenRequest, "invalid basic auth header");
+            var creds = Encoding.UTF8.GetString(Convert.FromBase64String(parts[1])).Split(':');
+            if (creds.Length != 2)
+                return TokenError(OidcError.invalid_request, tokenRequest, "invalid basic auth header");
+            tokenRequest.client_id = creds[0];
+            tokenRequest.client_secret = creds[1];
+        }
+
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(tokenRequest.code);
         var secIdToken = await cache.GetAndRemoveIdTokenFromSectorIdP(tokenRequest.code);
         if (secIdToken == null || authRequest == null)

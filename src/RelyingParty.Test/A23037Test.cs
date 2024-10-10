@@ -69,7 +69,7 @@ public class A23037Test
             grant_type = "authorization_code",
             redirect_uri = "redirect_uri",
             code_verifier = "code_verifier"
-        });
+        }, String.Empty);
 
         var jsonResult = (JsonResult)result;
         var tokenResponse = (TokenResponse)jsonResult.Value;
@@ -132,7 +132,7 @@ public class A23037Test
             grant_type = "authorization_code",
             redirect_uri = "redirect_uri",
             code_verifier = "code_verifier"
-        });
+        }, String.Empty);
 
         var jsonResult = (JsonResult)result;
         var tokenResponse = (TokenResponse)jsonResult.Value;
