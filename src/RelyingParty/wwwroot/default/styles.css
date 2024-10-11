@@ -30,6 +30,7 @@ body {
     text-align: left;
     font-family: 'lato-2','HelveticaNeue','Helvetica Neue','Helvetica-Neue',Helvetica,Arial,sans-serif;
 }
+
 button {
     border-radius: 8px;
     cursor: pointer;
@@ -47,15 +48,22 @@ button:hover {
     background-color: azure;
 }
 
-button img {
-    width: 35px;
-    height: 35px;
-    margin-right: 10px;
+button div {
+    width: 60px;
+    display: table-cell;
+    text-align: center;
+}
+
+button div img {
+    max-width: 60px;
+    max-height: 35px;
     vertical-align: middle;
 }
 
 button span {
     vertical-align: middle;
+    display: table-cell;
+    padding-left: 10px;
 }
 
 header {
@@ -72,6 +80,12 @@ header img {
 header span {
     font-size: 2rem;
     vertical-align: middle;
+}
+
+section {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 section, footer{

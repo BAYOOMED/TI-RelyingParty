@@ -7,7 +7,7 @@ window.addEventListener('load', async (event) => {
         let template = document.createElement("template");
         template.innerHTML = `
             <button type="submit" value="${ele.id}" name="idpid" >
-                <img src="${ele.logo_uri}" onerror="this.src='logo_missing.svg'" alt="logo"/><span>${ele.organization_name}</span>
+                <div><img src="${ele.logo_uri}" onerror="this.src='logo_missing.svg'" alt="logo"/></div><span>${ele.organization_name}</span>
             </button>`;
         form.appendChild(template.content);
     });
