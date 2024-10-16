@@ -92,7 +92,7 @@ public class A22861Test
         cache.Setup(c => c.GetAndRemoveParResponse(It.IsAny<string>())).ReturnsAsync(
             new ParResponse(new AuthorizationRequest { nonce = "nonce" }, "verifier", "https://secauth",
                 "https://secidp"));
-        cache.Setup(c => c.AddAuthorizationRequest(It.IsAny<AuthorizationRequest>())).ReturnsAsync("thisisthecode");
+        cache.Setup(c => c.AddAuthorizationRequest(It.IsAny<AuthorizationRequest>(), It.IsAny<string>())).ReturnsAsync("thisisthecode");
         options = new Mock<IOptions<OidcFedOptions>>();
         encPrivKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         options.Setup(o => o.Value).Returns(new OidcFedOptions

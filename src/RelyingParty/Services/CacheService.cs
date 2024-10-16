@@ -63,31 +63,25 @@ public class CacheService(IDistributedCache cache) : ICacheService
         return json == null ? null : new JsonWebKeySet(json);
     }
 
-    public Task<string> AddAuthorizationRequest(AuthorizationRequest request)
+    public Task<string> AddAuthorizationRequest(AuthorizationRequest request, string? linkedCode = null)
     {
         var code = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
-        return cache.SetAsync($"login_{code}", request, TimeSpan.FromMinutes(15)).ContinueWith(_ => code);
+        return cache.SetAsync($"login_{code}", new LinkedAuthRequest(request, linkedCode),
+            TimeSpan.FromMinutes(15)).ContinueWith(_ => code);
     }
 
-    public Task<AuthorizationRequest?> GetAndRemoveAuthorizationRequest(string code)
+    public async Task<AuthorizationRequest?> GetAndRemoveAuthorizationRequest(string code)
     {
-        return cache.GetAndRemoveAsync<AuthorizationRequest>($"login_{code}");
+        var req = await cache.GetAndRemoveAsync<LinkedAuthRequest>($"login_{code}");
+        if (req?.LinkedCode != null)
+            await GetAndRemoveAuthorizationRequest(req.LinkedCode);
+        return req?.Request;
     }
 
-    public async Task<AuthorizationRequest?> GetAuthorizationRequestAndRemoveIfUsedTwice(string code)
+    public async Task<AuthorizationRequest?> GetAuthorizationRequest(string code)
     {
-        var counter = await cache.GetAsync($"counter_{code}");
-        if (counter == null)
-        {
-            await cache.SetAsync($"counter_{code}", [1], new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-            });
-            return await cache.GetAsync<AuthorizationRequest>($"login_{code}");
-        }
-
-        await cache.RemoveAsync($"counter_{code}");
-        return await cache.GetAndRemoveAsync<AuthorizationRequest>($"login_{code}");
+        var req = await cache.GetAsync<LinkedAuthRequest>($"login_{code}");
+        return req?.Request;
     }
 
     public Task AddIdToken(string accessToken, JwtPayload idToken)
@@ -118,5 +112,11 @@ public class CacheService(IDistributedCache cache) : ICacheService
     public Task<JwtPayload?> GetAndRemoveIdTokenFromSectorIdP(string code)
     {
         return cache.GetAndRemoveJwtPayloadAsync($"secIdToken_{code}");
+    }
+
+    private record LinkedAuthRequest(AuthorizationRequest Request, string? LinkedCode)
+    {
+        // public required AuthorizationRequest Request { get; set; } = Request;
+        // public required string? LinkedCode { get; set; } = LinkedCode;
     }
 }

@@ -74,20 +74,19 @@ public class CacheServiceTest
     }
 
     /// <summary>
-    /// GetAuthorizationRequestAndRemoveIfUsedTwice returns the object only twice an returns null on subsequent calls 
+    /// GetAndRemoveAuthorizationRequest removes linked requests
     /// </summary>
     [TestMethod]
-    public async Task GetAuthorizationRequestAndRemoveIfUsedTwiceReturnedOnlyTwice()
+    public async Task GetAndRemoveAuthorizationRequestRemovesLinkedRequests()
     {
         var opt = new Mock<IOptions<MemoryDistributedCacheOptions>>();
         opt.Setup(o => o.Value).Returns(new MemoryDistributedCacheOptions());
         var cache = new CacheService(new MemoryDistributedCache(opt.Object));
         var code = await cache.AddAuthorizationRequest(new AuthorizationRequest());
-        var req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
+        var code2 = await cache.AddAuthorizationRequest(new AuthorizationRequest(), code);
+        var req  = await cache.GetAndRemoveAuthorizationRequest(code2);
         Assert.IsNotNull(req);
-        req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
-        Assert.IsNotNull(req);
-        req  = await cache.GetAuthorizationRequestAndRemoveIfUsedTwice(code);
-        Assert.IsNull(req);
+        Assert.IsNull(await cache.GetAndRemoveAuthorizationRequest(code));
+        Assert.IsNull(await cache.GetAndRemoveAuthorizationRequest(code2));
     }
 }

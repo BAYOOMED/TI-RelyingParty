@@ -1,1 +1,1 @@
-docker buildx build . -f ./RelyingParty/Dockerfile --platform linux/amd64,linux/arm64 -t mta-registry.k3-1.bym-dev.de/oidc-rp:latest --push
+docker buildx build . -f ./RelyingParty/Dockerfile --platform linux/amd64,linux/arm64 -t harbor.k3-1.bym-dev.de/medicalone/oidc-rp:env_test --push

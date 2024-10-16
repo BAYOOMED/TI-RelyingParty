@@ -20,9 +20,9 @@ public interface ICacheService
     Task AddIdpList(IList<IdpEntry> idpList, DateTime validTo);
     Task AddSectorIdpJwks(string iss, JsonWebKeySet jwks, DateTime validTo);
     Task<JsonWebKeySet?> GetSectorIdpJwks(string iss);
-    Task<string> AddAuthorizationRequest(AuthorizationRequest request);
+    Task<string> AddAuthorizationRequest(AuthorizationRequest request, string? linkedCode = null);
     Task<AuthorizationRequest?> GetAndRemoveAuthorizationRequest(string code);
-    Task<AuthorizationRequest?> GetAuthorizationRequestAndRemoveIfUsedTwice(string code);
+    Task<AuthorizationRequest?> GetAuthorizationRequest(string code);
     Task AddIdToken(string accessToken, JwtPayload idToken);
     Task<JwtPayload?> GetIdToken(string accessToken);
     Task AddParResponse(string state, ParResponse parResponse);

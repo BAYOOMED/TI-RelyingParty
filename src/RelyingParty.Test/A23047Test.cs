@@ -35,7 +35,7 @@ public class A23047Test
             }
         });
         var cache = new Mock<ICacheService>();
-        cache.Setup(c => c.AddAuthorizationRequest(It.IsAny<AuthorizationRequest>())).ReturnsAsync("acode");
+        cache.Setup(c => c.AddAuthorizationRequest(It.IsAny<AuthorizationRequest>(),It.IsAny<string>())).ReturnsAsync("acode");
         var logger = new Mock<ILogger<AuthorizeController>>();
         var parService = new Mock<ISectorIdPmTlsService>();
         var idpListService = new Mock<IFedMasterIdpListService>();
