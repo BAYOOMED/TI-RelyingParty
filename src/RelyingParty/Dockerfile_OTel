@@ -30,4 +30,5 @@ ENV DOTNET_STARTUP_HOOKS="/otel-dotnet-auto/net/OpenTelemetry.AutoInstrumentatio
 ENV OTEL_DOTNET_AUTO_HOME="/otel-dotnet-auto"
 ENV OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
+USER $APP_UID
 ENTRYPOINT ["dotnet", "RelyingParty.dll"]

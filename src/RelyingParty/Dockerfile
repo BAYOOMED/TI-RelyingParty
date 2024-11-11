@@ -12,4 +12,5 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 EXPOSE 8080
 WORKDIR /app
 COPY --from=build /app/publish .
+USER $APP_UID
 ENTRYPOINT ["dotnet", "RelyingParty.dll"]
