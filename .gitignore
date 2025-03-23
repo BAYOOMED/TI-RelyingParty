@@ -367,3 +367,4 @@ FodyWeavers.xsd
 # terraform
 .terraform
 mta-*_config.yml
+.DS_Store
