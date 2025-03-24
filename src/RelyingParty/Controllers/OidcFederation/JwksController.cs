@@ -81,7 +81,7 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
 
     private JsonWebKey CreateJwk(string pemCert, string use = "sig")
     {
-        using var cert = new X509Certificate2(Encoding.UTF8.GetBytes(pemCert));
+        using var cert = X509CertificateLoader.LoadCertificate(Encoding.UTF8.GetBytes(pemCert));
         var secKey = new X509SecurityKey(cert);
 
         var jwk = JsonWebKeyConverter.ConvertFromX509SecurityKey(secKey);
