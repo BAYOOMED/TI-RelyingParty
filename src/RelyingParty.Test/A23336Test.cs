@@ -28,6 +28,8 @@ public class A23336Test
         var cert = tlsCertService.GetClientCertificate();
         var pubKey = cert.GetECDsaPublicKey();
         
+        Assert.IsNotNull(pubKey);
+        
         var para = pubKey.ExportParameters(false);
         
         Assert.IsTrue(para.Curve.Oid.Value == ECCurve.NamedCurves.nistP256.Oid.Value ||

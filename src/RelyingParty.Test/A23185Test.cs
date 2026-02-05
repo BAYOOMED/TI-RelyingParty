@@ -70,6 +70,8 @@ public class A23185Test
         //we cannot wait for the cache to expire, so we remove the cert from the cache
         memCache.Remove("clientCertPem");
         var cert2 = certService.GetClientCertificate().GetECDsaPublicKey();
+        Assert.IsNotNull(cert1);
+        Assert.IsNotNull(cert2);
         Assert.IsFalse(cert1.ExportParameters(false).Q.X.SequenceEqual(cert2.ExportParameters(false).Q.X));
         Assert.IsFalse(cert1.ExportParameters(false).Q.Y.SequenceEqual(cert2.ExportParameters(false).Q.Y));
     }

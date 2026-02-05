@@ -36,8 +36,11 @@ public class TlsClientCertificateService : ITlsClientCertificateService
         var keyPem = _cache.GetString("clientCertKeyPem");
         if (certPem != null && keyPem != null)
         {
-            var cert = X509Certificate2.CreateFromEncryptedPem(certPem, keyPem, "111");
-            return cert;
+            var cert = X509Certificate2.CreateFromPem(certPem);
+            var key = ECDsa.Create();
+            key.ImportFromEncryptedPem(keyPem, "111");
+            var certWithKey = cert.CopyWithPrivateKey(key);
+            return certWithKey;
         }
         return null;
     }

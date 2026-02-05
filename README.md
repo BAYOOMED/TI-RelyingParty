@@ -43,7 +43,7 @@ The compose file starts the following services:
 
 # Configuration
 Configuration is done using dotnet appsettings.json files. Individual configuration values can be overwritten using environment variables.
-See https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-8.0#naming-of-environment-variables
+See https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-10.0#naming-of-environment-variables
 For an explanation of configurable settings see the *Options.cs classes in the root directory.
 
 # Limitations & TODOs
