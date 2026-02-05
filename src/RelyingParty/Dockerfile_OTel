@@ -32,4 +32,3 @@ ENV OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 USER $APP_UID
 ENTRYPOINT ["dotnet", "RelyingParty.dll"]
-5
