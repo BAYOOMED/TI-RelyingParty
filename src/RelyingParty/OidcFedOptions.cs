@@ -21,6 +21,11 @@ public class OidcFedOptions
     public string ClientName { get; set; }
 
     /// <summary>
+    ///     OrganizationName (federation_entity.organization_name in entity statement)
+    /// </summary>
+    public string OrganizationName { get; set; }
+
+    /// <summary>
     ///     ISS of federation master (default ist test environment - TU)
     /// </summary>
     public string FederationMaster { get; set; }
@@ -29,6 +34,16 @@ public class OidcFedOptions
     ///     List of scope values (must match the scopes defined in gematik registration form)
     /// </summary>
     public string Scope { get; set; }
+
+    /// <summary>
+    ///     Redirect URIs registered with the Federation Master (defaults to {Issuer}/cb)
+    /// </summary>
+    public string[]? RedirectUris { get; set; }
+
+    /// <summary>
+    ///     Default ACR values (defaults to ["gematik-ehealth-loa-high"])
+    /// </summary>
+    public string[]? DefaultAcrValues { get; set; }
 
     /// <summary>
     ///     PEM encoded private key used to sign the entity statement

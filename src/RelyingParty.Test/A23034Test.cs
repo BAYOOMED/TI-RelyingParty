@@ -28,6 +28,7 @@ public class A23034Test
             FederationMaster = "https://federationmaster",
             Issuer = "issuer",
             ClientName = "clientname",
+            OrganizationName = "Test Organization",
             SignPrivKey = ECDsa.Create().ExportECPrivateKeyPem()
         });
         var cnt = new EntityStatementController(opt.Object);

@@ -44,6 +44,22 @@ builder.Services.AddTransient<ITokenReplayCache, DistributedTokenReplayCache>();
 builder.Services.AddTransient<ITlsClientCertificateService, TlsClientCertificateService>();
 builder.Services.AddTransient<ITokenRequestValidator, TokenRequestValidator>();
 var fedOptions = builder.Configuration.GetSection("OidcFederation").Get<OidcFedOptions>()!;
+
+// A_27585: Validate redirect_uris at startup
+foreach (var uri in fedOptions.RedirectUris ?? [$"{fedOptions.Issuer}/cb"])
+{
+    if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed))
+        throw new InvalidOperationException($"A_27585: redirect_uri '{uri}' is not a valid absolute URI.");
+    if (!builder.Environment.IsDevelopment() && parsed.Scheme != "https")
+        throw new InvalidOperationException($"A_27585: redirect_uri '{uri}' must use HTTPS.");
+    if (!string.IsNullOrEmpty(parsed.Query))
+        throw new InvalidOperationException($"A_27585: redirect_uri '{uri}' must not contain a query part.");
+    if (!string.IsNullOrEmpty(parsed.Fragment))
+        throw new InvalidOperationException($"A_27585: redirect_uri '{uri}' must not contain a fragment.");
+    if (!string.IsNullOrEmpty(parsed.UserInfo))
+        throw new InvalidOperationException($"A_27585: redirect_uri '{uri}' must not contain user credentials.");
+}
+
 builder.Services.AddHttpClient<ISectorIdPmTlsService, SectorIdPmTlsService>(_ => { })
     .ConfigurePrimaryHttpMessageHandler(serv =>
     {
@@ -73,7 +89,7 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new SymLinkFileProvider(builder.Environment.WebRootPath)
 });
 app.UseCors();
-// manual routing because the routes depend on cofigured issuer
+// manual routing because the routes depend on configured issuer
 // OIDC federation Endpoints
 var path = new Uri(fedOptions.Issuer).LocalPath.TrimStart('/');
 app.MapControllerRoute("entitystatement", $"{path}/.well-known/openid-federation",

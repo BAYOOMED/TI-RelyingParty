@@ -15,8 +15,11 @@ namespace Com.Bayoomed.TelematikFederation.Controllers.OidcFederation;
 public class EntityStatementController(IOptions<OidcFedOptions> options) : ControllerBase
 {
     private readonly string _clientName = options.Value.ClientName;
+    private readonly string[]? _defaultAcrValues = options.Value.DefaultAcrValues;
     private readonly string _fedMaster = options.Value.FederationMaster;
     private readonly string _issuer = options.Value.Issuer;
+    private readonly string _organizationName = options.Value.OrganizationName;
+    private readonly string[]? _redirectUris = options.Value.RedirectUris;
     private readonly string _scope = options.Value.Scope;
     private readonly string _signPrivKey = options.Value.SignPrivKey;
 
@@ -48,7 +51,7 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
             new Claim("authority_hints", JsonSerializer.Serialize(new[] { _fedMaster }),
                 JsonClaimValueTypes.JsonArray),
             new Claim("metadata", JsonSerializer.Serialize(
-                new EntityStatementJwtMetadata(_issuer, _clientName, _scope)
+                new EntityStatementJwtMetadata(_issuer, _clientName, _scope, _organizationName, _redirectUris, _defaultAcrValues)
             ).RemoveEmptyArrayProperties(), JsonClaimValueTypes.Json)
         };
         var payload = new JwtPayload(_issuer, null, claims, null,

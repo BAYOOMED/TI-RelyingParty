@@ -30,14 +30,16 @@ public class A23004Test
             FederationMaster = "https://federationmaster",
             Issuer = "issuer",
             ClientName = "clientname",
+            OrganizationName = "Test Organization",
             SignPrivKey = ECDsa.Create().ExportECPrivateKeyPem()
         });
         var cnt = new EntityStatementController(opt.Object);
         var res = cnt.Get();
         var token = new JwtSecurityTokenHandler().ReadToken(res.Content) as JwtSecurityToken;
         var acr = (token.Payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("openid_relying_party").GetProperty("default_acr_values").GetString();
-        Assert.AreEqual("gematik-ehealth-loa-high", acr);
+            .GetProperty("openid_relying_party").GetProperty("default_acr_values");
+        Assert.AreEqual(JsonValueKind.Array, acr.ValueKind);
+        Assert.AreEqual("gematik-ehealth-loa-high", acr[0].GetString());
     }
 
     /// <summary>

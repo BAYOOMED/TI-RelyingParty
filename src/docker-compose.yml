@@ -23,6 +23,7 @@ services:
       - AUTHSERVER__CLIENTS__1__REDIRECTURIS__0=http://localhost:8088/realms/testadapter/broker/oidc2/endpoint
       - AUTHSERVER__CLIENTS__1__LOGINPAGEPATH=custom-theme/login.html
       - REDISHOST=redis:6379
+      - OIDCFEDERATION__ISSUER=http://rp:8999/meineapp
       - GEMATIKXAUTHHEADER="askGeamtikForValue"
       - OTEL_SERVICE_NAME=rp
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317

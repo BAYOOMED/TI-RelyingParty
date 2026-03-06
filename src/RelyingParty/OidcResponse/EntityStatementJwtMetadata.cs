@@ -2,22 +2,33 @@ using System.Text.Json.Serialization;
 
 namespace Com.Bayoomed.TelematikFederation.OidcResponse;
 
-public class EntityStatementJwtMetadata(string issuer, string clientName, string scope)
+public class EntityStatementJwtMetadata(
+    string issuer,
+    string clientName,
+    string scope,
+    string organizationName,
+    string[]? redirectUris = null,
+    string[]? defaultAcrValues = null)
 {
     [JsonPropertyName("openid_relying_party")]
-    public OpenIdRelyingParty OpenIdRelyingParty { get; } = new(issuer, clientName, scope);
+    public OpenIdRelyingParty OpenIdRelyingParty { get; } = new(issuer, clientName, scope, redirectUris, defaultAcrValues);
 
     [JsonPropertyName("federation_entity")]
-    public FederationEntity FederationEntity { get; } = new(clientName);
+    public FederationEntity FederationEntity { get; } = new(clientName, organizationName);
 }
 
-public class OpenIdRelyingParty(string issuer, string clientName, string scope)
+public class OpenIdRelyingParty(
+    string issuer,
+    string clientName,
+    string scope,
+    string[]? redirectUris = null,
+    string[]? defaultAcrValues = null)
 {
     [JsonPropertyName("client_name")] public string ClientName => clientName;
 
     [JsonPropertyName("signed_jwks_uri")] public string SignedJwksUri => $"{issuer}/jwks.jwt";
 
-    [JsonPropertyName("redirect_uris")] public string[] RedirectUris => [$"{issuer}/cb"];
+    [JsonPropertyName("redirect_uris")] public string[] RedirectUris => redirectUris ?? [$"{issuer}/cb"];
 
     [JsonPropertyName("grant_types")] public string[] GrantTypes => ["authorization_code"];
 
@@ -33,7 +44,7 @@ public class OpenIdRelyingParty(string issuer, string clientName, string scope)
     public string TokenEndpointAuthMethod => "self_signed_tls_client_auth";
 
     [JsonPropertyName("default_acr_values")]
-    public string DefaultAcrValues => "gematik-ehealth-loa-high";
+    public string[] DefaultAcrValues => defaultAcrValues ?? ["gematik-ehealth-loa-high"];
 
     [JsonPropertyName("id_token_signed_response_alg")]
     public string IdTokenSignedResponseAlg => "ES256";
@@ -45,9 +56,21 @@ public class OpenIdRelyingParty(string issuer, string clientName, string scope)
     public string IdTokenEncryptedResponseEnc => "A256GCM";
 
     [JsonPropertyName("scope")] public string Scope => scope;
+
+    [JsonPropertyName("ti_features_supported")]
+    public TiFeaturesSupported TiFeaturesSupported { get; } = new();
 }
 
-public class FederationEntity(string clientName)
+public class TiFeaturesSupported
+{
+    [JsonPropertyName("id_token_version_supported")]
+    public string[] IdTokenVersionSupported => ["1.0.0", "2.0.0"];
+}
+
+public class FederationEntity(string clientName, string organizationName)
 {
     [JsonPropertyName("name")] public string Name => clientName;
+
+    [JsonPropertyName("organization_name")]
+    public string OrganizationName => organizationName;
 }
