@@ -17,30 +17,41 @@ public static class JwtPayloadExtensions
     public static string? GetAuthorizationEndpoint(this JwtPayload payload)
     {
         return (payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("openid_provider").GetProperty("authorization_endpoint").GetString();;
+            .GetProperty("openid_provider").GetProperty("authorization_endpoint").GetString();
     }
     
     public static string? GetIdpListEndpoint(this JwtPayload payload)
     {
         return (payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("federation_entity").GetProperty("idp_list_endpoint").GetString();;
+            .GetProperty("federation_entity").GetProperty("idp_list_endpoint").GetString();
     }
     
     public static string? GetFederationFetchEndpoint(this JwtPayload payload)
     {
         return (payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("federation_entity").GetProperty("federation_fetch_endpoint").GetString();;
+            .GetProperty("federation_entity").GetProperty("federation_fetch_endpoint").GetString();
     }
     
     public static string? GetTokenEndpoint(this JwtPayload payload)
     {
         return (payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("openid_provider").GetProperty("token_endpoint").GetString();;
+            .GetProperty("openid_provider").GetProperty("token_endpoint").GetString();
     }
     
     public static string? GetSignedJwksUri(this JwtPayload payload)
     {
         return (payload["metadata"] as JsonElement? ?? default)
-            .GetProperty("openid_provider").GetProperty("signed_jwks_uri").GetString();;
+            .GetProperty("openid_provider").GetProperty("signed_jwks_uri").GetString();
+    }
+
+    public static string[]? GetIdTokenVersionSupported(this JwtPayload payload)
+    {
+        if (payload["metadata"] is not JsonElement metadata ||
+            !metadata.TryGetProperty("openid_provider", out var provider) ||
+            !provider.TryGetProperty("ti_features_supported", out var tiFeatures) ||
+            !tiFeatures.TryGetProperty("id_token_version_supported", out var versions))
+            return null;
+
+        return versions.EnumerateArray().Select(v => v.GetString()!).ToArray();
     }
 }

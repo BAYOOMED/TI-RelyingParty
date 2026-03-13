@@ -68,6 +68,23 @@ public class FedCallbackController
             var esSec = await sectorIdpEsService.GetSectorIdPEntityStatement(par.SecIdpIss);
             var rawIdToken = await sectorIdPmTlsService.SendTokenRequest(tokenRequest, esSec.GetTokenEndpoint()!);
             logger.LogDebug("rawIdToken: {RawIdToken}", rawIdToken);
+
+            // A_27505 - Versions-Tag im JWE Protected Header auswerten (fehlend = 1.0.0)
+            var idTokenVersion = GetIdTokenVersion(rawIdToken);
+            logger.LogDebug("ID_TOKEN version from JWE header: {Version}", idTokenVersion);
+
+            // A_27505 Hinweis 3: version im Header aber nicht im ES des sek. IDP → ES aktualisieren
+            if (idTokenVersion == "2.0.0")
+            {
+                var supportedVersions = esSec.GetIdTokenVersionSupported();
+                if (supportedVersions == null || !supportedVersions.Contains("2.0.0"))
+                {
+                    logger.LogInformation(
+                        "Sector IDP entity statement does not list version 2.0.0 - refreshing entity statement");
+                    await sectorIdpEsService.GetSectorIdPEntityStatement(par.SecIdpIss, true);
+                }
+            }
+
             var decryptedToken = DecryptToken(rawIdToken);
             JwtSecurityToken validatedToken;
             try
@@ -140,6 +157,12 @@ public class FedCallbackController
         var secKey = new ECDsaSecurityKey(ecdsa);
         secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
         return JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
+    }
+
+    private static string GetIdTokenVersion(string rawToken)
+    {
+        var headers = JWT.Headers(rawToken);
+        return headers.TryGetValue("version", out var version) ? version.ToString()! : "1.0.0";
     }
 
     private string DecryptToken(string rawToken)
