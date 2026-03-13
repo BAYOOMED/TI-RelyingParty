@@ -70,7 +70,15 @@ public class TokenController(
             new Claim(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(),
                 ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Nonce, authRequest.nonce)
-        }.Union(secIdToken.Claims.Where(c => c.Type.StartsWith("urn:telematik:claims:") || c.Type == "birthdate"));
+        }.Union(secIdToken.Claims.Where(c =>
+            c.Type.StartsWith("urn:telematik:claims:") ||
+            c.Type == "birthdate" ||
+            // A_28484: forward acr and amr so the downstream application can evaluate trust level and auth method
+            c.Type == "acr" ||
+            c.Type == "amr" ||
+            // A_27593: forward consent and interactive claims
+            c.Type == "urn:telematik:auth:consent" ||
+            c.Type == "urn:telematik:auth:interactive"));
         var token = new JwtSecurityToken(_issuer, authRequest.client_id, claims, DateTime.UtcNow,
             DateTime.UtcNow.AddMinutes(15), signingCredentials);
         var idToken = new JwtSecurityTokenHandler().WriteToken(token);

@@ -102,8 +102,7 @@ public class FedCallbackController
             var idToken = validatedToken.Payload;
             if (idToken.Nonce == null || idToken.Nonce != par.Request.nonce)
                 throw new Exception("nonce mismatch");
-            if (idToken.Acr != "gematik-ehealth-loa-high")
-                throw new Exception("acr value mismatch");
+            ValidateAcr(idToken);
 
             var newCode = await cache.AddAuthorizationRequest(authRequest);
             await cache.AddIdTokenFromSectorIdP(newCode, idToken);
@@ -122,6 +121,34 @@ public class FedCallbackController
             logger.LogError(e, "code exchange error: {@AuthRequest} {@TokenRequest}", par, tokenRequest);
             return ErrorRedirect(OidcError.server_error.ToString(), authRequest);
         }
+    }
+
+    /// <summary>
+    ///     A_23202-02 (befristet) + A_27593: Validate ACR claim.
+    ///     - "gematik-ehealth-loa-high" is always accepted.
+    ///     - "gematik-ehealth-loa-substantial" is accepted if:
+    ///       (a) amr contains "urn:telematik:auth:mEW" or "urn:telematik:auth:sso" (A_23202-02, temporary)
+    ///       (b) urn:telematik:auth:consent contains "loa-substantial" (A_27593, new)
+    /// </summary>
+    private static void ValidateAcr(JwtPayload idToken)
+    {
+        if (idToken.Acr == "gematik-ehealth-loa-high")
+            return;
+
+        if (idToken.Acr == "gematik-ehealth-loa-substantial")
+        {
+            // A_27593: Check consent claim (new mechanism)
+            if (idToken.Claims.Any(c =>
+                    c.Type == "urn:telematik:auth:consent" && c.Value == "loa-substantial"))
+                return;
+
+            // A_23202-02 (befristet): Check amr for mEW or sso
+            var amrValues = idToken.Claims.Where(c => c.Type == "amr").Select(c => c.Value).ToList();
+            if (amrValues.Contains("urn:telematik:auth:mEW") || amrValues.Contains("urn:telematik:auth:sso"))
+                return;
+        }
+
+        throw new Exception("acr value mismatch");
     }
 
     private async Task<JwtSecurityToken> ValidateToken(string rawIdToken, string secIdpIss, bool forceRefresh = false)
