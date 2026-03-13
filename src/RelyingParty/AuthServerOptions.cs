@@ -19,6 +19,11 @@ public class AuthServerOptions
     /// PEM encoded private key used to sign the issued tokens
     /// </summary>
     public string SignPrivKey { get; set; }
+
+    /// <summary>
+    ///     A_28208: UUID v7 key identifier for the auth server signing key. Auto-generated at startup.
+    /// </summary>
+    public string SignPrivKeyId { get; set; }
     
     /// <summary>
     /// List of configured clients

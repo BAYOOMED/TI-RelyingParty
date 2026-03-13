@@ -1,9 +1,11 @@
 using Com.Bayoomed.TelematikFederation;
 using Com.Bayoomed.TelematikFederation.Services;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using StackExchange.Redis;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 var commonOptions = builder.Configuration.Get<CommonOptions>()!;
@@ -80,6 +82,23 @@ builder.Services.AddCors(options =>
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
+
+// A_28208: Auto-generate UUID v7 key identifiers (persisted in distributed cache by key thumbprint)
+var cache = app.Services.GetRequiredService<IDistributedCache>();
+var fedOpts = app.Services.GetRequiredService<IOptions<OidcFedOptions>>().Value;
+fedOpts.SignPrivKeyId = ResolveKeyId(cache, fedOpts.SignPrivKey);
+fedOpts.EncPrivKeyId = ResolveKeyId(cache, fedOpts.EncPrivKey);
+if (!string.IsNullOrEmpty(fedOpts.NextSignPrivKey))
+    fedOpts.NextSignPrivKeyId = ResolveKeyId(cache, fedOpts.NextSignPrivKey);
+var authOpts = app.Services.GetRequiredService<IOptions<AuthServerOptions>>().Value;
+authOpts.SignPrivKeyId = ResolveKeyId(cache, authOpts.SignPrivKey);
+
+// A_23185-01: Validate key age does not exceed 398 days
+const int maxKeyAgeDays = 398;
+ValidateKeyAge(fedOpts.SignPrivKeyId, "OidcFederation:SignPrivKey", maxKeyAgeDays);
+ValidateKeyAge(fedOpts.EncPrivKeyId, "OidcFederation:EncPrivKey", maxKeyAgeDays);
+ValidateKeyAge(authOpts.SignPrivKeyId, "AuthServer:SignPrivKey", maxKeyAgeDays);
+
 app.UseSerilogRequestLogging();
 
 var authOptions = app.Services.GetRequiredService<IOptions<AuthServerOptions>>();
@@ -115,6 +134,46 @@ if (builder.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// A_28208: Resolve or create a UUID v7 key identifier for a PEM key, cached by JWK thumbprint
+static string ResolveKeyId(IDistributedCache cache, string pemKey)
+{
+    using var ecdsa = ECDsa.Create();
+    ecdsa.ImportFromPem(pemKey);
+    var secKey = new ECDsaSecurityKey(ecdsa);
+    var thumbprint = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+    var cacheKey = $"kid:{thumbprint}";
+    var existing = cache.GetString(cacheKey);
+    if (existing != null)
+        return existing;
+    var kid = Guid.CreateVersion7().ToString();
+    cache.SetString(cacheKey, kid);
+    return kid;
+}
+
+// A_23185-01: Validate key age based on UUID v7 timestamp
+static void ValidateKeyAge(string keyId, string keyName, int maxDays)
+{
+    if (!Guid.TryParse(keyId, out var guid) || guid.Version != 7) return;
+    var createdAt = GetUuid7Timestamp(guid);
+    var age = DateTimeOffset.UtcNow - createdAt;
+    if (age.TotalDays > maxDays)
+        throw new InvalidOperationException(
+            $"A_23185-01: {keyName} is {age.TotalDays:F0} days old (created {createdAt:yyyy-MM-dd}). " +
+            $"Keys must be rotated after {maxDays} days.");
+    if (age.TotalDays > maxDays - 30)
+        Log.Warning("A_23185-01: {KeyName} is {AgeDays:F0} days old and approaching the {MaxDays}-day limit. " +
+                     "Plan key rotation soon.", keyName, age.TotalDays, maxDays);
+}
+
+static DateTimeOffset GetUuid7Timestamp(Guid uuid)
+{
+    Span<byte> bytes = stackalloc byte[16];
+    uuid.TryWriteBytes(bytes, bigEndian: true, out _);
+    long unixMs = ((long)bytes[0] << 40) | ((long)bytes[1] << 32) | ((long)bytes[2] << 24) |
+                  ((long)bytes[3] << 16) | ((long)bytes[4] << 8) | bytes[5];
+    return DateTimeOffset.FromUnixTimeMilliseconds(unixMs);
+}
 
 internal class GematikXAuthHttpHandler(string headerValue) : HttpClientHandler
 {

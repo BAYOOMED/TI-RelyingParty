@@ -17,8 +17,12 @@ namespace Com.Bayoomed.TelematikFederation.Controllers.OidcFederation;
 public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertificateService certService) : ControllerBase
 {
     private readonly string _encPrivKey = options.Value.EncPrivKey;
+    private readonly string _encPrivKeyId = options.Value.EncPrivKeyId;
     private readonly string _issuer = options.Value.Issuer;
     private readonly string _signPrivKey = options.Value.SignPrivKey;
+    private readonly string _signPrivKeyId = options.Value.SignPrivKeyId;
+    private readonly string? _nextSignPrivKey = options.Value.NextSignPrivKey;
+    private readonly string? _nextSignPrivKeyId = options.Value.NextSignPrivKeyId;
 
     /// <summary>
     /// Returns the signed Jwks of the Relying Party (OIDC Federation)
@@ -30,7 +34,8 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(_signPrivKey);
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _signPrivKeyId;
 
         var signingCredentials = new SigningCredentials(secKey, SecurityAlgorithms.EcdsaSha256)
         {
@@ -40,18 +45,29 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
         var ecEnc = ECDsa.Create();
         ecEnc.ImportFromPem(_encPrivKey);
 
+        var keysList = new List<JsonWebKey>
+        {
+            CreateJwk(ecdsa, _signPrivKeyId),
+            CreateJwk(ecEnc, _encPrivKeyId, "enc"),
+            CreateJwk(certService.GetCertPem())
+        };
+
+        // A_24607: Include next signing key in signed JWKS if configured
+        if (!string.IsNullOrEmpty(_nextSignPrivKey) && !string.IsNullOrEmpty(_nextSignPrivKeyId))
+        {
+            using var nextEcdsa = ECDsa.Create();
+            nextEcdsa.ImportFromPem(_nextSignPrivKey);
+            keysList.Add(CreateJwk(nextEcdsa, _nextSignPrivKeyId));
+        }
+
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(),
                 ClaimValueTypes.Integer64),
             new Claim(JwtRegisteredClaimNames.Sub, _issuer,
                 ClaimValueTypes.String),
-            new Claim("keys", JsonSerializer.Serialize(new[]
-            {
-                CreateJwk(ecdsa),
-                CreateJwk(ecEnc, "enc"),
-                CreateJwk(certService.GetCertPem())
-            }).RemoveEmptyArrayProperties(), JsonClaimValueTypes.JsonArray)
+            new Claim("keys", JsonSerializer.Serialize(keysList).RemoveEmptyArrayProperties(),
+                JsonClaimValueTypes.JsonArray)
         };
         var payload = new JwtPayload(_issuer, null, claims, null,
             null);
@@ -66,12 +82,13 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
     }
 
 
-    private JsonWebKey CreateJwk(ECDsa key, string use = "sig")
+    private JsonWebKey CreateJwk(ECDsa key, string keyId, string use = "sig")
     {
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(key.ExportSubjectPublicKeyInfoPem());
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = keyId;
 
         var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
         jwk.Use = use;
@@ -86,7 +103,12 @@ public class JwksController(IOptions<OidcFedOptions> options, ITlsClientCertific
 
         var jwk = JsonWebKeyConverter.ConvertFromX509SecurityKey(secKey);
         jwk.Use = use;
-        var pubJwk = CreateJwk(cert.GetECDsaPublicKey() ?? throw new InvalidOperationException());
+        // TLS cert keeps its own kid (X509 thumbprint-based), not UUID v7
+        var ecdsaPub = cert.GetECDsaPublicKey() ?? throw new InvalidOperationException();
+        using var pubEcdsa = ECDsa.Create();
+        pubEcdsa.ImportFromPem(ecdsaPub.ExportSubjectPublicKeyInfoPem());
+        var pubSecKey = new ECDsaSecurityKey(pubEcdsa);
+        var pubJwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(pubSecKey);
         jwk.Alg = use == "sig" ? SecurityAlgorithms.EcdsaSha256 : SecurityAlgorithms.EcdhEs;
         jwk.Crv = pubJwk.Crv;
         jwk.X = pubJwk.X;

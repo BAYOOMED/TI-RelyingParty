@@ -22,6 +22,9 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
     private readonly string[]? _redirectUris = options.Value.RedirectUris;
     private readonly string _scope = options.Value.Scope;
     private readonly string _signPrivKey = options.Value.SignPrivKey;
+    private readonly string _signPrivKeyId = options.Value.SignPrivKeyId;
+    private readonly string? _nextSignPrivKey = options.Value.NextSignPrivKey;
+    private readonly string? _nextSignPrivKeyId = options.Value.NextSignPrivKeyId;
 
     /// <summary>
     ///     Returns the signed Entity Statement of the Relying Party (OIDC Federation)
@@ -33,7 +36,8 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(_signPrivKey);
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _signPrivKeyId;
 
         var signingCredentials = new SigningCredentials(secKey, SecurityAlgorithms.EcdsaSha256)
         {
@@ -72,12 +76,29 @@ public class EntityStatementController(IOptions<OidcFedOptions> options) : Contr
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(key.ExportSubjectPublicKeyInfoPem());
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _signPrivKeyId;
         var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
         jwk.Use = "sig";
         jwk.Alg = SecurityAlgorithms.EcdsaSha256;
         var jwks = new JsonWebKeySet();
         jwks.Keys.Add(jwk);
+
+        // A_24607: Include next signing key in JWKS if configured (deposited >= 24 h before use)
+        if (!string.IsNullOrEmpty(_nextSignPrivKey) && !string.IsNullOrEmpty(_nextSignPrivKeyId))
+        {
+            using var nextEcdsa = ECDsa.Create();
+            nextEcdsa.ImportFromPem(_nextSignPrivKey);
+            using var nextPub = ECDsa.Create();
+            nextPub.ImportFromPem(nextEcdsa.ExportSubjectPublicKeyInfoPem());
+            var nextSecKey = new ECDsaSecurityKey(nextPub);
+            nextSecKey.KeyId = _nextSignPrivKeyId;
+            var nextJwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(nextSecKey);
+            nextJwk.Use = "sig";
+            nextJwk.Alg = SecurityAlgorithms.EcdsaSha256;
+            jwks.Keys.Add(nextJwk);
+        }
+
         return jwks;
     }
 }

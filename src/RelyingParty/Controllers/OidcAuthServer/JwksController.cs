@@ -8,6 +8,7 @@ namespace Com.Bayoomed.TelematikFederation.Controllers.OidcAuthServer;
 public class JwksAuthController(IOptions<AuthServerOptions> options) : Controller
 {
     private readonly string _signPrivKey = options.Value.SignPrivKey;
+    private readonly string _signPrivKeyId = options.Value.SignPrivKeyId;
     
     /// <summary>
     /// Return the Jwks of the Auth Server (only signature public key is included)
@@ -20,7 +21,8 @@ public class JwksAuthController(IOptions<AuthServerOptions> options) : Controlle
         ecdsa.ImportFromPem(_signPrivKey);
         ecdsa.ImportFromPem(ecdsa.ExportSubjectPublicKeyInfoPem());
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _signPrivKeyId;
         var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
         jwk.Use = "sig";
         var keySet = new JsonWebKeySet();

@@ -20,6 +20,8 @@ public class FedCallbackController
 {
     private readonly string _authIss = authOptions.Value.Issuer;
     private readonly string _encPrivKey = options.Value.EncPrivKey;
+    private readonly string _encPrivKeyId = options.Value.EncPrivKeyId;
+    private readonly IList<string>? _previousEncPrivKeys = options.Value.PreviousEncPrivKeys;
     private readonly string _iss = options.Value.Issuer;
 
     /// <summary>
@@ -155,7 +157,8 @@ public class FedCallbackController
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(_encPrivKey);
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _encPrivKeyId;
         return JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
     }
 
@@ -165,9 +168,46 @@ public class FedCallbackController
         return headers.TryGetValue("version", out var version) ? version.ToString()! : "1.0.0";
     }
 
+    /// <summary>
+    ///     A_28209: Decrypt token trying current key first, then previous keys.
+    ///     Private encryption keys remain usable for decryption until the exp of the last
+    ///     Entity Statement in which they were published.
+    /// </summary>
     private string DecryptToken(string rawToken)
     {
-        var jwk = GetDecryptionKey();
+        // Try current key first
+        try
+        {
+            return DecryptWithKey(rawToken, GetDecryptionKey());
+        }
+        catch (Exception) when (_previousEncPrivKeys is { Count: > 0 })
+        {
+            // A_28209: Fall back to previous encryption keys
+        }
+
+        for (var i = 0; i < _previousEncPrivKeys!.Count; i++)
+        {
+            try
+            {
+                using var ecdsa = ECDsa.Create();
+                ecdsa.ImportFromPem(_previousEncPrivKeys[i]);
+                var secKey = new ECDsaSecurityKey(ecdsa);
+                secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+                var jwk = JsonWebKeyConverter.ConvertFromECDsaSecurityKey(secKey);
+                return DecryptWithKey(rawToken, jwk);
+            }
+            catch (Exception) when (i < _previousEncPrivKeys.Count - 1)
+            {
+                // try next key
+            }
+        }
+
+        // unreachable: the last iteration's exception propagates
+        throw new InvalidOperationException("decryption failed with all keys");
+    }
+
+    private static string DecryptWithKey(string rawToken, JsonWebKey jwk)
+    {
         var joseJwk = new Jwk(jwk.Crv, jwk.X, jwk.Y, jwk.D)
         {
             KeyId = jwk.Kid

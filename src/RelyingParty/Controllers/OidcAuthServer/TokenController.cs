@@ -20,6 +20,7 @@ public class TokenController(
     private readonly string _issuer = options.Value.Issuer;
 
     private readonly string _signPrivKey = options.Value.SignPrivKey;
+    private readonly string _signPrivKeyId = options.Value.SignPrivKeyId;
 
     /// <summary>
     ///     The token endpoint of the auth server. Exchange the code for an id_token and access_token.
@@ -56,7 +57,8 @@ public class TokenController(
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(_signPrivKey);
         var secKey = new ECDsaSecurityKey(ecdsa);
-        secKey.KeyId = Base64UrlEncoder.Encode(secKey.ComputeJwkThumbprint());
+        // A_28208: Use configured UUID v7 key identifier
+        secKey.KeyId = _signPrivKeyId;
         var signingCredentials = new SigningCredentials(secKey, SecurityAlgorithms.EcdsaSha256)
         {
             CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false }
