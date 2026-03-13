@@ -7,6 +7,6 @@ namespace Com.Bayoomed.TelematikFederation.Services;
 /// </summary>
 public interface ISectorIdPmTlsService
 {
-    Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state, string? scope);
+    Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state, string? scope, string? prompt = null, string? maxAge = null);
     Task<string> SendTokenRequest(TokenRequest request, string tokenEndpoint);
 }

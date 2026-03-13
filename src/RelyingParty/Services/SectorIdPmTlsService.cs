@@ -18,7 +18,7 @@ public class SectorIdPmTlsService(ISectorIdPEntityStatementService esService, IO
 {
     private readonly string _iss = options.Value.Issuer;
 
-    public async Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state, string? scope)
+    public async Task<ParResponse> SendPushedAuthorizationRequest(string iss, string state, string? scope, string? prompt = null, string? maxAge = null)
     {
         if(string.IsNullOrEmpty(scope))
             scope = options.Value.Scope;
@@ -33,7 +33,9 @@ public class SectorIdPmTlsService(ISectorIdPEntityStatementService esService, IO
             nonce = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32)),
             code_challenge = challenge,
             code_challenge_method = "S256",
-            acr_values = "gematik-ehealth-loa-high"
+            acr_values = "gematik-ehealth-loa-high",
+            prompt = prompt,
+            max_age = maxAge
         };
         var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(JsonSerializer.Serialize(authReq));
         var content = new FormUrlEncodedContent(dict!);

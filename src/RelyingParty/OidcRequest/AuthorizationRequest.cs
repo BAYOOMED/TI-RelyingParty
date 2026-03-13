@@ -1,5 +1,7 @@
 // ReSharper disable InconsistentNaming
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+using System.Text.Json.Serialization;
+
 namespace Com.Bayoomed.TelematikFederation.OidcRequest;
 
 public class AuthorizationRequest
@@ -14,4 +16,8 @@ public class AuthorizationRequest
     public string code_challenge_method { get; set; }
     public string? acr_values { get; set; }
     public string? login_hint { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? prompt { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? max_age { get; set; }
 }

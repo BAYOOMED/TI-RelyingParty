@@ -99,7 +99,7 @@ public class AuthorizeController(
             if (secIdp == null)
                 return BadRequest();
             var scope = _clients.FirstOrDefault(c => c.ClientId == authRequest.client_id)?.SecIdpRequestedScope;
-            var parResponse = await parService.SendPushedAuthorizationRequest(secIdp.iss, newCode, scope);
+            var parResponse = await parService.SendPushedAuthorizationRequest(secIdp.iss, newCode, scope, authRequest.prompt, authRequest.max_age);
             // we need this later to get the token
             await cache.AddParResponse(newCode, parResponse);
             return Redirect(parResponse.RedirectUri);
