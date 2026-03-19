@@ -40,6 +40,8 @@ public class A27505Test
         var para = HttpUtility.ParseQueryString(new Uri(((RedirectResult)cb).Url).Query);
         Assert.AreEqual("thisisthecode", para["code"]);
         Assert.IsNull(para["error"]);
+        // Verify that the entity statement was not refreshed
+        secIdpEsService.Verify(s => s.GetSectorIdPEntityStatement(It.IsAny<string>(), true), Times.Never());
     }
 
     /// <summary>

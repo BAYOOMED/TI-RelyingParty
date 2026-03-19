@@ -32,10 +32,8 @@ public class TokenController(
     public async Task<IActionResult> Post(TokenRequest tokenRequest,
         [FromHeader(Name = "Authorization")] string authorization)
     {
-        logger.LogDebug("token request: {@Request}", tokenRequest);
         if (!string.IsNullOrEmpty(authorization))
         {
-            logger.LogDebug("using basic auth header");
             //parse basic auth header
             var parts = authorization.Split(' ');
             if (parts.Length != 2 || parts[0] != "Basic")
@@ -85,7 +83,6 @@ public class TokenController(
         var accessToken = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
         //save it, so we can use it for userInfo endpoint
         await cache.AddIdToken(accessToken, token.Payload);
-        logger.LogDebug("id_token from auth: {@IdToken}", idToken);
         return Json(new TokenResponse { id_token = idToken, access_token = accessToken, token_type = "Bearer" });
     }
 

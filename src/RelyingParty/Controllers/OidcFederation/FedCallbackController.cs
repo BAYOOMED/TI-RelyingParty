@@ -1,7 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using System.Web;
 using Com.Bayoomed.TelematikFederation.OidcRequest;
 using Com.Bayoomed.TelematikFederation.OidcResponse;
@@ -69,11 +67,9 @@ public class FedCallbackController
         {
             var esSec = await sectorIdpEsService.GetSectorIdPEntityStatement(par.SecIdpIss);
             var rawIdToken = await sectorIdPmTlsService.SendTokenRequest(tokenRequest, esSec.GetTokenEndpoint()!);
-            logger.LogDebug("rawIdToken: {RawIdToken}", rawIdToken);
 
             // A_27505 - Versions-Tag im JWE Protected Header auswerten (fehlend = 1.0.0)
             var idTokenVersion = GetIdTokenVersion(rawIdToken);
-            logger.LogDebug("ID_TOKEN version from JWE header: {Version}", idTokenVersion);
 
             // A_27505 Hinweis 3: version im Header aber nicht im ES des sek. IDP → ES aktualisieren
             if (idTokenVersion == "2.0.0")
@@ -113,7 +109,6 @@ public class FedCallbackController
             query["code"] = newCode;
             query["iss"] = _authIss;
             redirectUri.Query = query.ToString();
-            logger.LogDebug("token iss: {Token}", decryptedToken);
             return Redirect(redirectUri.Uri.ToString());
         }
         catch (Exception e)
