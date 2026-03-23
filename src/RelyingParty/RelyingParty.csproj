@@ -12,6 +12,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="RelyingParty.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="jose-jwt" Version="5.2.0" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.2" />
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
