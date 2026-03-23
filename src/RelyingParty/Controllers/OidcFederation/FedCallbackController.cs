@@ -41,16 +41,14 @@ public class FedCallbackController
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(state);
         if (authRequest == null || par == null)
         {
-            logger.LogWarning("session expired. Request: {Code} {State} {ErrorCode} {ErrorDescription}", code, state,
-                errorCode, errorDescription);
+            logger.LogWarning("session expired: error={Error} description={Description}", errorCode, errorDescription);
             return BadRequest("session expired");
         }
 
         if (!string.IsNullOrEmpty(errorCode) || string.IsNullOrEmpty(code))
         {
             logger.Log(errorCode == OidcError.access_denied.ToString() ? LogLevel.Warning : LogLevel.Error,
-                "error from sector idp: {Code}, {Error}, {Description}", code, errorCode,
-                errorDescription);
+                "error from sector idp: error={Error} description={Description}", errorCode, errorDescription);
             return ErrorRedirect(errorCode, authRequest);
         }
 
@@ -113,7 +111,7 @@ public class FedCallbackController
         }
         catch (Exception e)
         {
-            logger.LogError(e, "code exchange error: {@AuthRequest} {@TokenRequest}", par, tokenRequest);
+            logger.LogError(e, "code exchange error");
             return ErrorRedirect(OidcError.server_error.ToString(), authRequest);
         }
     }
