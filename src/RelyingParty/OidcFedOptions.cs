@@ -21,9 +21,20 @@ public class OidcFedOptions
     public string ClientName { get; set; }
 
     /// <summary>
-    ///     OrganizationName (federation_entity.organization_name in entity statement)
+    ///     OrganizationName (openid_relying_party.organization_name in entity statement)
     /// </summary>
     public string OrganizationName { get; set; }
+
+    /// <summary>
+    ///     A_23034-02: Keywords (openid_relying_party.keywords in entity statement), e.g.
+    ///     "product_type:&lt;Produkttyp&gt;" and "product_type_version:&lt;Version&gt;". Omitted while empty.
+    /// </summary>
+    public string[]? Keywords { get; set; }
+
+    /// <summary>
+    ///     A_23034-02: Support contacts (openid_relying_party.contacts in entity statement). Omitted while empty.
+    /// </summary>
+    public string[]? Contacts { get; set; }
 
     /// <summary>
     ///     ISS of federation master (default ist test environment - TU)

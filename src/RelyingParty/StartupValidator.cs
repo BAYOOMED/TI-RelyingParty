@@ -33,7 +33,7 @@ internal static class StartupValidator
     }
 
     /// <summary>
-    ///     Validates that OrganizationName is configured (required for federation entity metadata).
+    ///     Validates that OrganizationName is configured (required for openid_relying_party.organization_name, A_23034-02).
     /// </summary>
     internal static void ValidateOrganizationName(string? organizationName)
     {

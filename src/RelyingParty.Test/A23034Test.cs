@@ -37,4 +37,29 @@ public class A23034Test
         
         Assert.IsTrue(token.ValidTo <= DateTime.UtcNow.AddHours(24));
     }
+
+    /// <summary>
+    ///     A_23034-02: organization_name ist im Metadatenblock openid_relying_party anzugeben.
+    /// </summary>
+    [TestMethod]
+    public void A23034_OrganizationNameInOpenIdRelyingParty()
+    {
+        var opt = new Mock<IOptions<OidcFedOptions>>();
+        opt.Setup(o => o.Value).Returns(new OidcFedOptions
+        {
+            FedMasterJwks = new JsonWebKeySet(),
+            FederationMaster = "https://federationmaster",
+            Issuer = "issuer",
+            ClientName = "clientname",
+            OrganizationName = "Test Organization",
+            SignPrivKey = ECDsa.Create().ExportECPrivateKeyPem()
+        });
+        var cnt = new EntityStatementController(opt.Object);
+        var res = cnt.Get();
+        var token = new JwtSecurityTokenHandler().ReadToken(res.Content) as JwtSecurityToken;
+        using var metadata = JsonDocument.Parse(JsonSerializer.Serialize(token!.Payload["metadata"]));
+
+        Assert.AreEqual("Test Organization",
+            metadata.RootElement.GetProperty("openid_relying_party").GetProperty("organization_name").GetString());
+    }
 }

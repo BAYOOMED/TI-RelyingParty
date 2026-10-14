@@ -8,23 +8,39 @@ public class EntityStatementJwtMetadata(
     string scope,
     string organizationName,
     string[]? redirectUris = null,
-    string[]? defaultAcrValues = null)
+    string[]? defaultAcrValues = null,
+    string[]? keywords = null,
+    string[]? contacts = null)
 {
     [JsonPropertyName("openid_relying_party")]
-    public OpenIdRelyingParty OpenIdRelyingParty { get; } = new(issuer, clientName, scope, redirectUris, defaultAcrValues);
+    public OpenIdRelyingParty OpenIdRelyingParty { get; } =
+        new(issuer, clientName, scope, organizationName, redirectUris, defaultAcrValues, keywords, contacts);
 
     [JsonPropertyName("federation_entity")]
-    public FederationEntity FederationEntity { get; } = new(clientName, organizationName);
+    public FederationEntity FederationEntity { get; } = new(clientName);
 }
 
 public class OpenIdRelyingParty(
     string issuer,
     string clientName,
     string scope,
+    string organizationName,
     string[]? redirectUris = null,
-    string[]? defaultAcrValues = null)
+    string[]? defaultAcrValues = null,
+    string[]? keywords = null,
+    string[]? contacts = null)
 {
     [JsonPropertyName("client_name")] public string ClientName => clientName;
+
+    // gemSpec_IDP_FD A_23034-02: organization_name belongs to the openid_relying_party metadata block
+    [JsonPropertyName("organization_name")]
+    public string OrganizationName => organizationName;
+
+    // gemSpec_IDP_FD A_23034-02: product_type / product_type_version (empty arrays are removed from the ES)
+    [JsonPropertyName("keywords")] public string[] Keywords => keywords ?? [];
+
+    // gemSpec_IDP_FD A_23034-02: support e-mail address (empty arrays are removed from the ES)
+    [JsonPropertyName("contacts")] public string[] Contacts => contacts ?? [];
 
     [JsonPropertyName("signed_jwks_uri")] public string SignedJwksUri => $"{issuer}/jwks.jwt";
 
@@ -67,10 +83,7 @@ public class TiFeaturesSupported
     public string[] IdTokenVersionSupported => ["1.0.0", "2.0.0"];
 }
 
-public class FederationEntity(string clientName, string organizationName)
+public class FederationEntity(string clientName)
 {
     [JsonPropertyName("name")] public string Name => clientName;
-
-    [JsonPropertyName("organization_name")]
-    public string OrganizationName => organizationName;
 }
