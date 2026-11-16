@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Web;
+using Com.Bayoomed.TelematikFederation.Logging;
 using Com.Bayoomed.TelematikFederation.OidcRequest;
 using Com.Bayoomed.TelematikFederation.OidcResponse;
 using Com.Bayoomed.TelematikFederation.Services;
@@ -37,16 +38,34 @@ public class FedCallbackController
         [FromQuery(Name = "error_code")] string? errorCode,
         [FromQuery(Name = "error_description")] string? errorDescription)
     {
+        var result = new GidLoginResult(GidLoginResult.StageCallback);
+        try
+        {
+            return await CallbackCore(code, state, errorCode, errorDescription, result);
+        }
+        finally
+        {
+            result.Write(logger);
+        }
+    }
+
+    private async Task<IActionResult> CallbackCore(string? code, string state, string? errorCode,
+        string? errorDescription, GidLoginResult result)
+    {
         var par = await cache.GetAndRemoveParResponse(state);
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(state);
         if (authRequest == null || par == null)
         {
+            result.Set(GidLoginResult.UserAborted, "session_expired");
             logger.LogWarning("session expired: error={Error} description={Description}", errorCode, errorDescription);
             return BadRequest("session expired");
         }
 
         if (!string.IsNullOrEmpty(errorCode) || string.IsNullOrEmpty(code))
         {
+            result.Set(
+                errorCode == OidcError.access_denied.ToString() ? GidLoginResult.UserAborted : GidLoginResult.IdpError,
+                string.IsNullOrEmpty(errorCode) ? "missing_code" : errorCode);
             logger.Log(errorCode == OidcError.access_denied.ToString() ? LogLevel.Warning : LogLevel.Error,
                 "error from sector idp: error={Error} description={Description}", errorCode, errorDescription);
             return ErrorRedirect(errorCode, authRequest);
@@ -63,9 +82,13 @@ public class FedCallbackController
 
         try
         {
+            // the classification set before each section applies if that section throws
+            result.Set(GidLoginResult.IdpError, "idp_entity_statement_failed");
             var esSec = await sectorIdpEsService.GetSectorIdPEntityStatement(par.SecIdpIss);
+            result.Set(GidLoginResult.IdpError, "idp_token_request_failed");
             var rawIdToken = await sectorIdPmTlsService.SendTokenRequest(tokenRequest, esSec.GetTokenEndpoint()!);
 
+            result.Set(GidLoginResult.IdpError, "id_token_invalid");
             // A_27505 - Versions-Tag im JWE Protected Header auswerten (fehlend = 1.0.0)
             var idTokenVersion = GetIdTokenVersion(rawIdToken);
 
@@ -81,7 +104,9 @@ public class FedCallbackController
                 }
             }
 
+            result.Set(GidLoginResult.TechnicalFailure, "decrypt_failed");
             var decryptedToken = DecryptToken(rawIdToken);
+            result.Set(GidLoginResult.IdpError, "id_token_invalid");
             JwtSecurityToken validatedToken;
             try
             {
@@ -94,12 +119,16 @@ public class FedCallbackController
             }
 
             var idToken = validatedToken.Payload;
+            result.Set(GidLoginResult.IdpError, "nonce_mismatch");
             if (idToken.Nonce == null || idToken.Nonce != par.Request.nonce)
                 throw new Exception("nonce mismatch");
+            result.Set(GidLoginResult.IdpError, "acr_mismatch");
             ValidateAcr(idToken);
 
+            result.Set(GidLoginResult.TechnicalFailure, "cache_error");
             var newCode = await cache.AddAuthorizationRequest(authRequest);
             await cache.AddIdTokenFromSectorIdP(newCode, idToken);
+            result.Set(GidLoginResult.TechnicalFailure, "redirect_failed");
             var redirectUri = new UriBuilder(authRequest.redirect_uri);
             var query = HttpUtility.ParseQueryString(redirectUri.Query);
             query["response_type"] = authRequest.response_type;
@@ -107,6 +136,7 @@ public class FedCallbackController
             query["code"] = newCode;
             query["iss"] = _authIss;
             redirectUri.Query = query.ToString();
+            result.Set(GidLoginResult.Success);
             return Redirect(redirectUri.Uri.ToString());
         }
         catch (Exception e)

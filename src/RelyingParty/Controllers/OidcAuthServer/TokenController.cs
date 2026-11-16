@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Com.Bayoomed.TelematikFederation.Logging;
 using Com.Bayoomed.TelematikFederation.OidcRequest;
 using Com.Bayoomed.TelematikFederation.OidcResponse;
 using Com.Bayoomed.TelematikFederation.Services;
@@ -32,15 +33,29 @@ public class TokenController(
     public async Task<IActionResult> Post(TokenRequest tokenRequest,
         [FromHeader(Name = "Authorization")] string authorization)
     {
+        var result = new GidLoginResult(GidLoginResult.StageToken);
+        try
+        {
+            return await PostCore(tokenRequest, authorization, result);
+        }
+        finally
+        {
+            result.Write(logger);
+        }
+    }
+
+    private async Task<IActionResult> PostCore(TokenRequest tokenRequest, string authorization,
+        GidLoginResult result)
+    {
         if (!string.IsNullOrEmpty(authorization))
         {
             //parse basic auth header
             var parts = authorization.Split(' ');
             if (parts.Length != 2 || parts[0] != "Basic")
-                return TokenError(OidcError.invalid_request, tokenRequest, "invalid basic auth header");
+                return TokenError(OidcError.invalid_request, tokenRequest, result, "invalid basic auth header");
             var creds = Encoding.UTF8.GetString(Convert.FromBase64String(parts[1])).Split(':');
             if (creds.Length != 2)
-                return TokenError(OidcError.invalid_request, tokenRequest, "invalid basic auth header");
+                return TokenError(OidcError.invalid_request, tokenRequest, result, "invalid basic auth header");
             tokenRequest.client_id = creds[0];
             tokenRequest.client_secret = creds[1];
         }
@@ -48,10 +63,10 @@ public class TokenController(
         var authRequest = await cache.GetAndRemoveAuthorizationRequest(tokenRequest.code);
         var secIdToken = await cache.GetAndRemoveIdTokenFromSectorIdP(tokenRequest.code);
         if (secIdToken == null || authRequest == null)
-            return TokenError(OidcError.invalid_grant, tokenRequest, "cache miss - session expired");
+            return TokenError(OidcError.invalid_grant, tokenRequest, result, "cache miss - session expired");
         var (error, msg) = requestValidator.ValidateRequest(tokenRequest, authRequest);
         if (error != null)
-            return TokenError(error.Value, tokenRequest, msg);
+            return TokenError(error.Value, tokenRequest, result, msg);
         using var ecdsa = ECDsa.Create();
         ecdsa.ImportFromPem(_signPrivKey);
         var secKey = new ECDsaSecurityKey(ecdsa);
@@ -83,11 +98,15 @@ public class TokenController(
         var accessToken = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
         //save it, so we can use it for userInfo endpoint
         await cache.AddIdToken(accessToken, token.Payload);
+        result.Set(GidLoginResult.Success);
         return Json(new TokenResponse { id_token = idToken, access_token = accessToken, token_type = "Bearer" });
     }
 
-    private IActionResult TokenError(OidcError error, TokenRequest request, string? details = null)
+    private IActionResult TokenError(OidcError error, TokenRequest request, GidLoginResult result,
+        string? details = null)
     {
+        result.Set(error == OidcError.server_error ? GidLoginResult.TechnicalFailure : GidLoginResult.ClientError,
+            error.ToString());
         logger.Log(error == OidcError.server_error ? LogLevel.Error : LogLevel.Warning,
             "oidc error: {Error}, details: {Details}, token-request: {@Request}", error, details, request);
         return error is OidcError.invalid_client ? Unauthorized(error.ToString()) : BadRequest(error.ToString());
